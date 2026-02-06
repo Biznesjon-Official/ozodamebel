@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: ozoda_mebel_db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:-furniture_crm}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - ozoda_network
+
+  # Redis Cache (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: ozoda_mebel_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ozoda_network
+
+  # Main Application
+  app:
+    build: .
+    container_name: ozoda_mebel_app
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    environment:
+      NODE_ENV: production
+      PORT: 3008
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/furniture_crm?authSource=admin
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - ozoda_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3008/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: ozoda_mebel_nginx
+    restart: unless-stopped
+    ports:
+      - "3009:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./uploads:/var/www/uploads:ro
+    depends_on:
+      - app
+    networks:
+      - ozoda_network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  ozoda_network:
+    driver: bridge
