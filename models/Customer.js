@@ -12,9 +12,9 @@ const customerSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function(v) {
-        return v && v.toString().startsWith('998');
+        return v && v.toString().startsWith('998') && v.toString().length === 12;
       },
-      message: 'Telefon raqami 998 bilan boshlanishi kerak'
+      message: 'Telefon raqami 998 bilan boshlanishi va 12 ta raqamdan iborat bo\'lishi kerak'
     }
   },
   birthDate: {
@@ -63,9 +63,9 @@ const customerSchema = new mongoose.Schema({
       required: true,
       validate: {
         validator: function(v) {
-          return v && v.toString().startsWith('998');
+          return v && v.toString().startsWith('998') && v.toString().length === 12;
         },
-        message: 'Kafil telefon raqami 998 bilan boshlanishi kerak'
+        message: 'Kafil telefon raqami 998 bilan boshlanishi va 12 ta raqamdan iborat bo\'lishi kerak'
       }
     },
     birthDate: {
@@ -197,11 +197,13 @@ customerSchema.index({ 'creditInfo.nextPaymentDate': 1 });
 // Keyingi to'lov sanasini avtomatik hisoblash
 customerSchema.pre('save', function(next) {
   if (this.isNew) {
-    // Yangi mijoz uchun keyingi to'lov sanasini hisoblash
-    const startDate = this.creditInfo.startDate || new Date();
-    const nextMonth = new Date(startDate);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    this.creditInfo.nextPaymentDate = nextMonth;
+    // Yangi mijoz uchun keyingi to'lov sanasini hisoblash (agar kiritilmagan bo'lsa)
+    if (!this.creditInfo.nextPaymentDate) {
+      const startDate = this.creditInfo.startDate || new Date();
+      const nextMonth = new Date(startDate);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      this.creditInfo.nextPaymentDate = nextMonth;
+    }
     
     // Qolgan summani hisoblash (sotiladigan narx - boshlang'ich to'lov)
     const initialPayment = this.creditInfo.initialPayment || 0;

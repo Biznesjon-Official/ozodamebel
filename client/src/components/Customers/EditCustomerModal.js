@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import apiService from '../../services/api';
-import { formatCurrency, formatPhoneInput, formatCurrencyInput, parseCurrency, validatePhoneNumber } from '../../utils/formatters';
+import { formatCurrency, formatPhoneInput, formatCurrencyInput, parseCurrency, validatePhoneNumber, formatPassportInput, validatePassport } from '../../utils/formatters';
 import { regionsList, getDistricts } from '../../data/regions';
 
 const ModalOverlay = styled.div`
@@ -388,6 +388,10 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
   const [customerPhoneValue, setCustomerPhoneValue] = useState('');
   const [guarantorPhoneValue, setGuarantorPhoneValue] = useState('');
   
+  // Passport states
+  const [customerPassportValue, setCustomerPassportValue] = useState('');
+  const [guarantorPassportValue, setGuarantorPassportValue] = useState('');
+  
   // Region and district states
   const [customerRegion, setCustomerRegion] = useState('');
   const [customerDistricts, setCustomerDistricts] = useState([]);
@@ -422,21 +426,13 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
     register('customerPhone', { 
       required: 'Mijoz telefon raqami majburiy',
       validate: {
-        length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak',
-        validPrefix: value => {
-          if (!value) return true;
-          return validatePhoneNumber(value) || 'Telefon raqam 90, 91, 93, 94, 95, 97, 98, 99 dan biri bilan boshlanishi kerak';
-        }
+        length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
       }
     });
     register('guarantorPhone', { 
       required: 'Kafil telefon raqami majburiy',
       validate: {
-        length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak',
-        validPrefix: value => {
-          if (!value) return true;
-          return validatePhoneNumber(value) || 'Telefon raqam 90, 91, 93, 94, 95, 97, 98, 99 dan biri bilan boshlanishi kerak';
-        }
+        length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
       }
     });
   }, [register]);
@@ -513,6 +509,19 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
     setValue('initialPayment', parseCurrency(formatted));
   };
 
+  // Handle passport input changes
+  const handleCustomerPassportChange = (e) => {
+    const formatted = formatPassportInput(e.target.value);
+    setCustomerPassportValue(formatted);
+    setValue('customerPassport', formatted);
+  };
+
+  const handleGuarantorPassportChange = (e) => {
+    const formatted = formatPassportInput(e.target.value);
+    setGuarantorPassportValue(formatted);
+    setValue('guarantorPassport', formatted);
+  };
+
   // Prevent wheel scroll on number inputs
   const handleWheelPrevent = (e) => {
     e.target.blur();
@@ -537,7 +546,13 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       setValue('customerDistrict', customer.district);
       setValue('customerAddress', customer.address);
       setValue('customerHouseNumber', customer.houseNumber);
-      setValue('customerPassport', customer.passportSeries);
+      
+      // Set customer passport with formatting
+      if (customer.passportSeries) {
+        const formattedPassport = formatPassportInput(customer.passportSeries);
+        setCustomerPassportValue(formattedPassport);
+        setValue('customerPassport', formattedPassport);
+      }
       
       // Guarantor info
       setValue('guarantorName', customer.guarantor?.name);
@@ -555,7 +570,13 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       setValue('guarantorDistrict', customer.guarantor?.district);
       setValue('guarantorAddress', customer.guarantor?.address);
       setValue('guarantorHouseNumber', customer.guarantor?.houseNumber);
-      setValue('guarantorPassport', customer.guarantor?.passportSeries);
+      
+      // Set guarantor passport with formatting
+      if (customer.guarantor?.passportSeries) {
+        const formattedGuarantorPassport = formatPassportInput(customer.guarantor.passportSeries);
+        setGuarantorPassportValue(formattedGuarantorPassport);
+        setValue('guarantorPassport', formattedGuarantorPassport);
+      }
       
       // Product info
       setValue('productName', customer.product?.name);
@@ -762,14 +783,34 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               </ImagePreviewGrid>
             )}
             
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '20px' }}>
+              <Button
+                type="button"
+                className="primary"
+                onClick={() => document.getElementById('imageInput').click()}
+                style={{ flex: 1, maxWidth: '200px' }}
+              >
+                <Upload size={20} />
+                Galereyadan tanlash
+              </Button>
+              
+              <Button
+                type="button"
+                className="primary"
+                onClick={() => document.getElementById('cameraInput').click()}
+                style={{ flex: 1, maxWidth: '200px' }}
+              >
+                <Camera size={20} />
+                Kameradan olish
+              </Button>
+            </div>
+            
             <ImageUploadArea
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              onClick={() => document.getElementById('imageInput').click()}
             >
               <Upload size={48} color="#3498db" />
-              <h4>Rasm yuklash</h4>
-              <p>Rasmlarni shu yerga sudrab oling yoki bosing</p>
+              <h4>Yoki rasmlarni shu yerga sudrab oling</h4>
               <p style={{ fontSize: '12px', color: '#6c757d' }}>
                 Bir nechta rasm tanlashingiz mumkin
               </p>
@@ -780,6 +821,15 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               type="file"
               accept="image/*"
               multiple
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            
+            <input
+              id="cameraInput"
+              type="file"
+              accept="image/*"
+              capture="environment"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
@@ -891,8 +941,10 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               <FormGroup>
                 <Label>Pasport seriyasi</Label>
                 <Input
-                  {...register('customerPassport')}
+                  value={customerPassportValue}
+                  onChange={handleCustomerPassportChange}
                   placeholder="AA 1234567"
+                  maxLength={10}
                 />
               </FormGroup>
             </FormGrid>
@@ -985,8 +1037,10 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               <FormGroup>
                 <Label>Pasport seriyasi</Label>
                 <Input
-                  {...register('guarantorPassport')}
+                  value={guarantorPassportValue}
+                  onChange={handleGuarantorPassportChange}
                   placeholder="AA 1234567"
+                  maxLength={10}
                 />
               </FormGroup>
             </FormGrid>
@@ -999,12 +1053,15 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
             <h3>Mahsulot ma'lumotlari</h3>
             <FormGrid>
               <FormGroup>
-                <Label>Mahsulot nomi *</Label>
+                <Label>Mahsulot(lar) nomi *</Label>
                 <Input
                   {...register('productName', { required: 'Mahsulot nomi majburiy' })}
-                  placeholder="Mahsulot nomi"
+                  placeholder="Masalan: Divan, Kreslo, Stol"
                   className={errors.productName ? 'error' : ''}
                 />
+                <span style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                  Bir nechta mahsulot bo'lsa, vergul bilan ajrating
+                </span>
                 {errors.productName && <ErrorMessage>{errors.productName.message}</ErrorMessage>}
               </FormGroup>
 

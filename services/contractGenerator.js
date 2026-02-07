@@ -124,19 +124,19 @@ class ContractGenerator {
     const totalPrice = product?.sellingPrice || 0;
     
     let tableRows = [];
-    tableRows.push('| № | Товар номи | Ўлчов бирлиги | Товар баҳоси | Миқдори | Сумма |');
-    tableRows.push('|---|------------|---------------|--------------|---------|-------|');
+    tableRows.push('| № | Товар номи | Сумма |');
+    tableRows.push('|---|------------|-------|');
     
     // Har bir oy uchun qator yaratish
     for (let i = 1; i <= installmentMonths; i++) {
       const monthName = this.getMonthName(i);
       const rowProductName = `${productName} (${i}-ой)`;
       
-      tableRows.push(`| ${i} | ${rowProductName} | шт | ${formatCurrency(monthlyPayment)} | 1.00 | ${formatCurrency(monthlyPayment)} |`);
+      tableRows.push(`| ${i} | ${rowProductName} | ${formatCurrency(monthlyPayment)} |`);
     }
     
     // Jami qatori
-    tableRows.push(`| **Жами:** | | | | **${installmentMonths}.00** | **${formatCurrency(totalPrice)}** |`);
+    tableRows.push(`| **Жами:** | | **${formatCurrency(totalPrice)}** |`);
     
     return tableRows.join('\n');
   }

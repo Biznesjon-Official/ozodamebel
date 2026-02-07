@@ -50,11 +50,8 @@ export const validatePhoneNumber = (phone) => {
   // 9 ta raqam bo'lishi kerak
   if (digits.length !== 9) return false;
   
-  // O'zbekiston operator kodlari bilan boshlanishi kerak
-  const validPrefixes = ['90', '91', '93', '94', '95', '97', '98', '99'];
-  const prefix = digits.slice(0, 2);
-  
-  return validPrefixes.includes(prefix);
+  // Har qanday 9 ta raqamni qabul qilish
+  return true;
 };
 
 // Pul miqdorini formatlash
@@ -123,4 +120,39 @@ export const getDaysUntil = (date) => {
   const diffTime = targetDate - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
+};
+
+// Pasport seriyasini formatlash (AA 1234567)
+export const formatPassportInput = (value) => {
+  // Faqat harflar va raqamlarni olish
+  const cleaned = value.replace(/[^a-zA-Z0-9]/g, '');
+  
+  // Birinchi 2 ta belgini katta harf qilish
+  const letters = cleaned.slice(0, 2).toUpperCase();
+  
+  // Keyingi 7 ta raqamni olish
+  const numbers = cleaned.slice(2, 9).replace(/\D/g, '');
+  
+  // Format: AA 1234567
+  if (letters.length === 0) {
+    return '';
+  } else if (letters.length < 2) {
+    return letters;
+  } else if (numbers.length === 0) {
+    return letters;
+  } else {
+    return `${letters} ${numbers}`;
+  }
+};
+
+// Pasport seriyasini validatsiya qilish
+export const validatePassport = (passport) => {
+  if (!passport) return false;
+  
+  // Bo'shliqlarni olib tashlash
+  const cleaned = passport.replace(/\s/g, '');
+  
+  // Format: 2 ta harf + 7 ta raqam
+  const regex = /^[A-Z]{2}\d{7}$/;
+  return regex.test(cleaned);
 };

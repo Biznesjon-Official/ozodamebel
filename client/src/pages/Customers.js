@@ -20,7 +20,8 @@ import {
   Activity,
   Banknote,
   Wallet,
-  FileText
+  FileText,
+  Calculator
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../contexts/NotificationContext';
@@ -29,6 +30,7 @@ import AddCustomerModal from '../components/Customers/AddCustomerModal';
 import EditCustomerModal from '../components/Customers/EditCustomerModal';
 import ContractModal from '../components/Customers/ContractModal';
 import ImageModal from '../components/UI/ImageModal';
+import InstallmentCalculator from '../components/InstallmentCalculator';
 import HighlightedText from '../components/HighlightedText';
 import { formatPhoneNumber, formatCurrency, formatDate, formatDateForInput, isToday, isDueSoon, getDaysUntil } from '../utils/formatters';
 
@@ -1432,6 +1434,42 @@ const DeleteModalContent = styled.div`
     }
   }
 `;
+
+const FloatingButton = styled.button`
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4);
+  transition: all 0.3s ease;
+  z-index: 999;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 30px rgba(52, 152, 219, 0.6);
+  }
+  
+  &:active {
+    transform: translateY(-2px);
+  }
+  
+  @media (max-width: 768px) {
+    bottom: 80px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+  }
+`;
+
 const Customers = () => {
   const navigate = useNavigate();
   const { showSuccess, showError } = useNotification();
@@ -1458,6 +1496,9 @@ const Customers = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentImages, setCurrentImages] = useState([]);
+  
+  // Calculator modal state
+  const [showCalculator, setShowCalculator] = useState(false);
   
   // Contract generation states
   const [contractLoading, setContractLoading] = useState({});
@@ -2584,6 +2625,16 @@ const Customers = () => {
           onPrev={handlePrevImage}
         />
       )}
+
+      {/* Calculator Modal */}
+      {showCalculator && (
+        <InstallmentCalculator onClose={() => setShowCalculator(false)} />
+      )}
+
+      {/* Floating Calculator Button */}
+      <FloatingButton onClick={() => setShowCalculator(true)}>
+        <Calculator size={24} />
+      </FloatingButton>
     </PageContainer>
   );
 };

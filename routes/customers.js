@@ -57,7 +57,8 @@ router.post('/', protect, auditLog('create', 'customer'), async (req, res) => {
       monthlyPayment,
       
       // Initial payment
-      initialPayment
+      initialPayment,
+      nextPaymentDate
     } = req.body;
 
     // Telefon raqamlarni normalize qilish
@@ -101,7 +102,8 @@ router.post('/', protect, auditLog('create', 'customer'), async (req, res) => {
       creditInfo: {
         startDate: new Date(),
         initialPayment: parseFloat(initialPayment) || 0,
-        remainingAmount: parseFloat(sellingPrice) - (parseFloat(initialPayment) || 0)
+        remainingAmount: parseFloat(sellingPrice) - (parseFloat(initialPayment) || 0),
+        nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate) : null
       },
       
       createdBy: req.user._id
