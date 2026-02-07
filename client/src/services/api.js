@@ -17,15 +17,11 @@ const API_BASE_URL = getApiBaseUrl();
 
 // Get full image URL
 export const getImageUrl = (imagePath) => {
+  // If no path, return null
   if (!imagePath) return null;
   
-  // If it's a Base64 data URL, return as is
+  // If it's already a data URL (Base64), return as is
   if (imagePath.startsWith('data:')) {
-    return imagePath;
-  }
-  
-  // If already a full URL, return as is
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
   
@@ -34,12 +30,15 @@ export const getImageUrl = (imagePath) => {
     return imagePath;
   }
   
-  // Construct full URL for relative paths
-  // In development: http://localhost:3008/uploads/profiles/file-xxx.jpg
-  // In production: https://yourdomain.com/uploads/profiles/file-xxx.jpg
+  // If it's a full URL, return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // For old file-based images (backward compatibility)
   const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3008'  // Development backend URL
-    : window.location.origin;   // Production URL
+    ? 'http://localhost:3008'
+    : window.location.origin;
   
   return `${baseUrl}${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
 };

@@ -14,39 +14,8 @@ uploadDirs.forEach(dir => {
   }
 });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Default to documents
-    let uploadPath = 'uploads/documents';
-    
-    // Try to get type from query parameter or default to documents
-    const type = req.query.type || req.headers['x-upload-type'] || 'document';
-    
-    switch (type) {
-      case 'profile':
-        uploadPath = 'uploads/profiles';
-        break;
-      case 'document':
-        uploadPath = 'uploads/documents';
-        break;
-      case 'contract':
-        uploadPath = 'uploads/contracts';
-        break;
-      default:
-        uploadPath = 'uploads/documents';
-    }
-    
-    console.log('📁 Upload destination:', uploadPath, 'Type:', type);
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
+// Configure multer for file uploads - store in memory for Base64 conversion
+const storage = multer.memoryStorage();
 
 // File filter
 const fileFilter = (req, file, cb) => {
@@ -98,7 +67,7 @@ router.post('/', protect, (req, res, next) => {
 }, async (req, res) => {
   try {
     console.log('📤 Upload request received');
-    console.log('📤 File info:', req.file);
+    console.log('📤 File info:', req.file ? 'File present' : 'No file');
     console.log('📤 Body info:', req.body);
     
     if (!req.file) {
@@ -109,35 +78,30 @@ router.post('/', protect, (req, res, next) => {
       });
     }
 
-    // Construct file URL
-    const type = req.body.type || 'documents';
-    // Map type to correct folder name
-    const folderMap = {
-      'profile': 'profiles',
-      'document': 'documents',
-      'contract': 'contracts'
-    };
-    const folder = folderMap[type] || type;
-    const fileUrl = `/uploads/${folder}/${req.file.filename}`;
+    // Convert file buffer to Base64
+    const base64Data = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    const base64Image = `data:${mimeType};base64,${base64Data}`;
+
+    console.log('📤 File converted to Base64, size:', base64Image.length, 'characters');
 
     const fileInfo = {
-      filename: req.file.filename,
+      filename: req.file.originalname,
       originalName: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      path: req.file.path,
-      url: fileUrl,
-      filePath: fileUrl
+      url: base64Image,
+      filePath: base64Image
     };
 
-    console.log('📤 File uploaded successfully:', fileUrl);
+    console.log('📤 File uploaded successfully as Base64');
 
     res.json({
       success: true,
       message: 'Fayl muvaffaqiyatli yuklandi',
       file: fileInfo,
-      filePath: fileUrl,
-      url: fileUrl
+      filePath: base64Image,
+      url: base64Image
     });
   } catch (error) {
     console.error('📤 Upload error:', error);

@@ -133,7 +133,9 @@ app.use(express.urlencoded({
   extended: true, 
   limit: '100mb'
 }));
-app.use('/uploads', express.static('uploads'));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB ulanishi
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/furniture_installment', {
