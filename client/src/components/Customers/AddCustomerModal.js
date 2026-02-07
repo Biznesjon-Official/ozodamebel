@@ -1319,85 +1319,88 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         );
 
       case 3:
-        return (
-          <div>
-            <h3>Kafil ma'lumotlari</h3>
-            <FormGrid>
-              <FormGroup>
-                <Label>Kafil ismi *</Label>
-                <Input
-                  {...register('guarantorName', { required: 'Kafil ismi majburiy' })}
-                  placeholder="To'liq ism"
-                  className={errors.guarantorName ? 'error' : ''}
-                  autoComplete="new-password"
-                  data-form-type="other"
-                />
-                {errors.guarantorName && <ErrorMessage>{errors.guarantorName.message}</ErrorMessage>}
-              </FormGroup>
-
-              <FormGroup>
-                <Label>Telefon raqam *</Label>
-                <div style={{ position: 'relative' }}>
-                  <span style={{
-                    position: 'absolute',
-                    left: '16px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#6c757d',
-                    fontSize: '14px',
-                    pointerEvents: 'none',
-                    zIndex: 1
-                  }}>+998</span>
+        // If hasGuarantor is true, show guarantor form
+        // If hasGuarantor is false, show product form
+        if (hasGuarantor) {
+          return (
+            <div>
+              <h3>Kafil ma'lumotlari</h3>
+              <FormGrid>
+                <FormGroup>
+                  <Label>Kafil ismi *</Label>
                   <Input
-                    value={guarantorPhoneValue}
-                    onChange={handleGuarantorPhoneChange}
-                    placeholder="90 123 45 67"
-                    style={{ paddingLeft: '70px' }}
-                    className={errors.guarantorPhone ? 'error' : ''}
+                    {...register('guarantorName', { required: 'Kafil ismi majburiy' })}
+                    placeholder="To'liq ism"
+                    className={errors.guarantorName ? 'error' : ''}
                     autoComplete="new-password"
                     data-form-type="other"
                   />
-                </div>
-                {errors.guarantorPhone && <ErrorMessage>{errors.guarantorPhone.message}</ErrorMessage>}
-              </FormGroup>
+                  {errors.guarantorName && <ErrorMessage>{errors.guarantorName.message}</ErrorMessage>}
+                </FormGroup>
 
-              <FormGroup>
-                <Label>Tug'ilgan sana</Label>
-                <Input
-                  type="date"
-                  {...register('guarantorBirthDate')}
-                  autoComplete="new-password"
-                  data-form-type="other"
-                />
-              </FormGroup>
+                <FormGroup>
+                  <Label>Telefon raqam *</Label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{
+                      position: 'absolute',
+                      left: '16px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: '#6c757d',
+                      fontSize: '14px',
+                      pointerEvents: 'none',
+                      zIndex: 1
+                    }}>+998</span>
+                    <Input
+                      value={guarantorPhoneValue}
+                      onChange={handleGuarantorPhoneChange}
+                      placeholder="90 123 45 67"
+                      style={{ paddingLeft: '70px' }}
+                      className={errors.guarantorPhone ? 'error' : ''}
+                      autoComplete="new-password"
+                      data-form-type="other"
+                    />
+                  </div>
+                  {errors.guarantorPhone && <ErrorMessage>{errors.guarantorPhone.message}</ErrorMessage>}
+                </FormGroup>
 
-              <FormGroup>
-                <Label>Viloyat</Label>
-                <Select 
-                  value={guarantorRegion}
-                  onChange={handleGuarantorRegionChange}
-                >
-                  <option value="">Viloyatni tanlang</option>
-                  {regionsList.map(region => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
-                </Select>
-              </FormGroup>
+                <FormGroup>
+                  <Label>Tug'ilgan sana</Label>
+                  <Input
+                    type="date"
+                    {...register('guarantorBirthDate')}
+                    autoComplete="new-password"
+                    data-form-type="other"
+                  />
+                </FormGroup>
 
-              <FormGroup>
-                <Label>Tuman</Label>
-                <Select 
-                  {...register('guarantorDistrict')}
-                  disabled={!guarantorRegion}
-                >
-                  <option value="">Tumanni tanlang</option>
-                  {guarantorDistricts.map(district => (
-                    <option key={district} value={district}>{district}</option>
-                  ))}
-                </Select>
-              </FormGroup>
+                <FormGroup>
+                  <Label>Viloyat</Label>
+                  <Select 
+                    value={guarantorRegion}
+                    onChange={handleGuarantorRegionChange}
+                  >
+                    <option value="">Viloyatni tanlang</option>
+                    {regionsList.map(region => (
+                      <option key={region} value={region}>{region}</option>
+                    ))}
+                  </Select>
+                </FormGroup>
 
-              <FormGroup>
+                <FormGroup>
+                  <Label>Tuman</Label>
+                  <Select 
+                    {...register('guarantorDistrict')}
+                    disabled={!guarantorRegion}
+                  >
+                    <option value="">Tumanni tanlang</option>
+                    {guarantorDistricts.map(district => (
+                      <option key={district} value={district}>{district}</option>
+                    ))}
+                  </Select>
+                </FormGroup>
+
+                <FormGroup>
                 <Label>Uy manzili</Label>
                 <Input
                   {...register('guarantorAddress')}
@@ -1431,6 +1434,187 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
             </FormGrid>
           </div>
         );
+        } else {
+          // If no guarantor, show product form in step 3
+          return (
+            <div>
+              <h3>Mahsulot ma'lumotlari</h3>
+              <FormGrid>
+                <FormGroup>
+                  <Label>Mahsulot(lar) nomi *</Label>
+                  <Input
+                    {...register('productName', { required: 'Mahsulot nomi majburiy' })}
+                    placeholder="Masalan: Divan, Kreslo, Stol"
+                    className={errors.productName ? 'error' : ''}
+                    autoComplete="new-password"
+                    data-form-type="other"
+                  />
+                  <span style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                    Bir nechta mahsulot bo'lsa, vergul bilan ajrating
+                  </span>
+                  {errors.productName && <ErrorMessage>{errors.productName.message}</ErrorMessage>}
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Asl narxi (so'm) *</Label>
+                  <Input
+                    value={originalPriceValue}
+                    onChange={handleOriginalPriceChange}
+                    placeholder="0"
+                    className={errors.originalPrice ? 'error' : ''}
+                    autoComplete="new-password"
+                    data-form-type="other"
+                  />
+                  {errors.originalPrice && <ErrorMessage>{errors.originalPrice.message}</ErrorMessage>}
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Ustama turi *</Label>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMarkupType('percent');
+                        setMarkupAmountValue('');
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        border: markupType === 'percent' ? '2px solid #3498db' : '2px solid #e9ecef',
+                        borderRadius: '8px',
+                        background: markupType === 'percent' ? '#e3f2fd' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: markupType === 'percent' ? 'bold' : 'normal',
+                        color: markupType === 'percent' ? '#3498db' : '#666'
+                      }}
+                    >
+                      Foizda (%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMarkupType('amount');
+                        setValue('profitPercentage', '');
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        border: markupType === 'amount' ? '2px solid #3498db' : '2px solid #e9ecef',
+                        borderRadius: '8px',
+                        background: markupType === 'amount' ? '#e3f2fd' : 'white',
+                        cursor: 'pointer',
+                        fontWeight: markupType === 'amount' ? 'bold' : 'normal',
+                        color: markupType === 'amount' ? '#3498db' : '#666'
+                      }}
+                    >
+                      So'mda
+                    </button>
+                  </div>
+                  
+                  {markupType === 'percent' ? (
+                    <>
+                      <Label>Ustama (%) *</Label>
+                      <Input
+                        type="number"
+                        {...register('profitPercentage', { required: markupType === 'percent' ? 'Ustama majburiy' : false })}
+                        placeholder="20"
+                        className={errors.profitPercentage ? 'error' : ''}
+                        onWheel={handleWheelPrevent}
+                        autoComplete="new-password"
+                        data-form-type="other"
+                      />
+                      {errors.profitPercentage && <ErrorMessage>{errors.profitPercentage.message}</ErrorMessage>}
+                    </>
+                  ) : (
+                    <>
+                      <Label>Ustama (so'm) *</Label>
+                      <Input
+                        value={markupAmountValue}
+                        onChange={handleMarkupAmountChange}
+                        placeholder="0"
+                        autoComplete="new-password"
+                        data-form-type="other"
+                      />
+                      {markupAmountValue === '' && <ErrorMessage>Ustama majburiy</ErrorMessage>}
+                    </>
+                  )}
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Necha oyga bo'lib berish *</Label>
+                  <Input
+                    type="number"
+                    {...register('installmentMonths', { required: 'Oy soni majburiy' })}
+                    placeholder="Masalan: 12"
+                    className={errors.installmentMonths ? 'error' : ''}
+                    onWheel={handleWheelPrevent}
+                    autoComplete="new-password"
+                    data-form-type="other"
+                    min="1"
+                    max="60"
+                  />
+                  {errors.installmentMonths && <ErrorMessage>{errors.installmentMonths.message}</ErrorMessage>}
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Boshlang'ich to'lov (so'm)</Label>
+                  <Input
+                    value={initialPaymentValue}
+                    onChange={handleInitialPaymentChange}
+                    placeholder="0"
+                    autoComplete="new-password"
+                    data-form-type="other"
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Keyingi to'lov sanasi</Label>
+                  <Input
+                    type="date"
+                    {...register('nextPaymentDate')}
+                    autoComplete="new-password"
+                    data-form-type="other"
+                  />
+                  <span style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+                    Agar kiritilmasa, avtomatik 1 oy keyingi sana bo'ladi
+                  </span>
+                </FormGroup>
+              </FormGrid>
+
+              {originalPrice > 0 && (profitPercentage > 0 || markupAmount > 0) && installmentMonths > 0 && (
+                <CalculationContainer>
+                  <h4>Hisob-kitob</h4>
+                  <CalculationRow>
+                    <span>Asl narx:</span>
+                    <span>{formatCurrency(originalPrice)} so'm</span>
+                  </CalculationRow>
+                  <CalculationRow>
+                    <span>Ustama {markupType === 'percent' ? `(${profitPercentage}%)` : ''}:</span>
+                    <span>{formatCurrency(actualMarkup)} so'm</span>
+                  </CalculationRow>
+                  <CalculationRow>
+                    <span>Sotiladigan narx:</span>
+                    <span>{formatCurrency(sellingPrice)} so'm</span>
+                  </CalculationRow>
+                  {initialPayment > 0 && (
+                    <CalculationRow>
+                      <span>Boshlang'ich to'lov:</span>
+                      <span>{formatCurrency(initialPayment)} so'm</span>
+                    </CalculationRow>
+                  )}
+                  <CalculationRow>
+                    <span>Qolgan summa:</span>
+                    <span>{formatCurrency(remainingAmount)} so'm</span>
+                  </CalculationRow>
+                  <CalculationRow>
+                    <span>Oylik to'lov ({installmentMonths} oy):</span>
+                    <span>{formatCurrency(monthlyPayment)} so'm</span>
+                  </CalculationRow>
+                </CalculationContainer>
+              )}
+            </div>
+          );
+        }
 
       case 4:
         return (
