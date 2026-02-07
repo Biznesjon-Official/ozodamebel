@@ -62,7 +62,7 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// @desc    Fayl yuklash (Base64 formatida MongoDB uchun)
+// @desc    Fayl yuklash
 // @route   POST /api/upload
 // @access  Private
 router.post('/', protect, upload.single('file'), async (req, res) => {
@@ -79,31 +79,28 @@ router.post('/', protect, upload.single('file'), async (req, res) => {
       });
     }
 
-    // Read file and convert to Base64
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const base64Image = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
-
-    // Delete the temporary file after converting to Base64
-    fs.unlinkSync(req.file.path);
+    // Construct file URL
+    const type = req.body.type || 'documents';
+    const fileUrl = `/uploads/${type}/${req.file.filename}`;
 
     const fileInfo = {
       filename: req.file.filename,
       originalName: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      base64: base64Image,
-      url: base64Image,
-      filePath: base64Image
+      path: req.file.path,
+      url: fileUrl,
+      filePath: fileUrl
     };
 
-    console.log('📤 File converted to Base64, size:', base64Image.length);
+    console.log('📤 File uploaded successfully:', fileUrl);
 
     res.json({
       success: true,
       message: 'Fayl muvaffaqiyatli yuklandi',
       file: fileInfo,
-      filePath: base64Image,
-      url: base64Image
+      filePath: fileUrl,
+      url: fileUrl
     });
   } catch (error) {
     console.error('📤 Upload error:', error);
