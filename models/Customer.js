@@ -52,18 +52,20 @@ const customerSchema = new mongoose.Schema({
     required: false
   }],
   
-  // Kafil ma'lumotlari
+  // Kafil ma'lumotlari (ixtiyoriy)
   guarantor: {
     name: {
       type: String,
-      required: true
+      required: false
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
       validate: {
         validator: function(v) {
-          return v && v.toString().startsWith('998') && v.toString().length === 12;
+          // Only validate if phone is provided
+          if (!v) return true;
+          return v.toString().startsWith('998') && v.toString().length === 12;
         },
         message: 'Kafil telefon raqami 998 bilan boshlanishi va 12 ta raqamdan iborat bo\'lishi kerak'
       }

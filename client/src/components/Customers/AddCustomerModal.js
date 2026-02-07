@@ -378,6 +378,69 @@ const SkipButton = styled.button`
   }
 `;
 
+// Toggle Switch Components
+const ToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+`;
+
+const ToggleLabel = styled.label`
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 14px;
+  flex: 1;
+`;
+
+const ToggleSwitch = styled.label`
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+    
+    &:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+  }
+  
+  input:checked + .slider {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(26px);
+  }
+`;
+
 // Step 4: Product calculation
 const CalculationContainer = styled.div`
   background: #f8f9fa;
@@ -409,6 +472,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
   const [customerPhoneValue, setCustomerPhoneValue] = useState('');
   const [guarantorPhoneValue, setGuarantorPhoneValue] = useState('');
   const [showCamera, setShowCamera] = useState(false);
+  const [hasGuarantor, setHasGuarantor] = useState(true); // Toggle for guarantor
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -439,12 +503,18 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
     };
   }, []);
 
-  const steps = [
-    { id: 1, label: 'Rasm yuklash', icon: Camera },
-    { id: 2, label: 'Mijoz ma\'lumotlari', icon: User },
-    { id: 3, label: 'Kafil ma\'lumotlari', icon: Users },
-    { id: 4, label: 'Mahsulot ma\'lumotlari', icon: Package }
-  ];
+  const steps = hasGuarantor 
+    ? [
+        { id: 1, label: 'Rasm yuklash', icon: Camera },
+        { id: 2, label: 'Mijoz ma\'lumotlari', icon: User },
+        { id: 3, label: 'Kafil ma\'lumotlari', icon: Users },
+        { id: 4, label: 'Mahsulot ma\'lumotlari', icon: Package }
+      ]
+    : [
+        { id: 1, label: 'Rasm yuklash', icon: Camera },
+        { id: 2, label: 'Mijoz ma\'lumotlari', icon: User },
+        { id: 3, label: 'Mahsulot ma\'lumotlari', icon: Package }
+      ];
 
   // Register phone fields for validation
   useEffect(() => {
@@ -454,17 +524,22 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
       }
     });
-    register('guarantorPhone', { 
-      required: 'Kafil telefon raqami majburiy',
-      validate: {
-        length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
-      }
-    });
+    
+    // Guarantor phone only required if hasGuarantor is true
+    if (hasGuarantor) {
+      register('guarantorPhone', { 
+        required: 'Kafil telefon raqami majburiy',
+        validate: {
+          length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
+        }
+      });
+    }
+    
     register('originalPrice', {
       required: 'Asl narx majburiy',
       validate: value => parseCurrency(originalPriceValue) > 0 || 'Asl narx 0 dan katta bo\'lishi kerak'
     });
-  }, [register, originalPriceValue]);
+  }, [register, originalPriceValue, hasGuarantor]);
 
   // Clear browser auto-fill when component mounts
   useEffect(() => {
@@ -832,13 +907,28 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
                customerPhoneValue && customerPhoneValue.replace(/\D/g, '').length === 9;
         
       case 3:
-        // Step 3: Guarantor info validation
-        const guarantorName = watch('guarantorName');
-        return guarantorName && guarantorName.trim() !== '' && 
-               guarantorPhoneValue && guarantorPhoneValue.replace(/\D/g, '').length === 9;
+        // Step 3: Guarantor or Product info validation (depends on hasGuarantor)
+        if (hasGuarantor) {
+          // Validate guarantor info
+          const guarantorName = watch('guarantorName');
+          return guarantorName && guarantorName.trim() !== '' && 
+                 guarantorPhoneValue && guarantorPhoneValue.replace(/\D/g, '').length === 9;
+        } else {
+          // Validate product info (step 3 becomes product step when no guarantor)
+          const productName = watch('productName');
+          const profitPercentage = watch('profitPercentage');
+          const hasValidMarkup = markupType === 'percent' 
+            ? (profitPercentage && profitPercentage > 0)
+            : (markupAmount && markupAmount > 0);
+          
+          return productName && productName.trim() !== '' && 
+                 originalPrice > 0 && 
+                 hasValidMarkup &&
+                 installmentMonths > 0;
+        }
         
       case 4:
-        // Step 4: Product info validation
+        // Step 4: Product info validation (only when hasGuarantor is true)
         const productName = watch('productName');
         const profitPercentage = watch('profitPercentage');
         const hasValidMarkup = markupType === 'percent' 
@@ -856,7 +946,8 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
   };
 
   const nextStep = () => {
-    if (currentStep < 4 && validateCurrentStep()) {
+    const maxStep = hasGuarantor ? 4 : 3;
+    if (currentStep < maxStep && validateCurrentStep()) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -933,16 +1024,6 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         passportSeries: data.customerPassport,
         profileImages: imageUrls,
         
-        // Guarantor info
-        guarantorName: data.guarantorName,
-        guarantorPhone: data.guarantorPhone,
-        guarantorBirthDate: data.guarantorBirthDate,
-        guarantorRegion: data.guarantorRegion,
-        guarantorDistrict: data.guarantorDistrict,
-        guarantorAddress: data.guarantorAddress,
-        guarantorHouseNumber: data.guarantorHouseNumber,
-        guarantorPassport: data.guarantorPassport,
-        
         // Product info
         productName: data.productName,
         originalPrice: parseCurrency(originalPriceValue),
@@ -955,8 +1036,21 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         initialPayment: parseCurrency(initialPaymentValue),
         nextPaymentDate: data.nextPaymentDate || null
       };
+      
+      // Add guarantor info only if hasGuarantor is true
+      if (hasGuarantor) {
+        customerData.guarantorName = data.guarantorName;
+        customerData.guarantorPhone = data.guarantorPhone;
+        customerData.guarantorBirthDate = data.guarantorBirthDate;
+        customerData.guarantorRegion = data.guarantorRegion;
+        customerData.guarantorDistrict = data.guarantorDistrict;
+        customerData.guarantorAddress = data.guarantorAddress;
+        customerData.guarantorHouseNumber = data.guarantorHouseNumber;
+        customerData.guarantorPassport = data.guarantorPassport;
+      }
 
       console.log('📤 Sending customer data with images:', customerData.profileImages);
+      console.log('📤 Has guarantor:', hasGuarantor);
       const response = await apiService.createCustomer(customerData);
       
       if (response.success) {
@@ -1100,6 +1194,20 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         return (
           <div>
             <h3>Mijoz ma'lumotlari</h3>
+            
+            {/* Toggle for Guarantor */}
+            <ToggleContainer>
+              <ToggleLabel>Kafil ma'lumotlarini qo'shish</ToggleLabel>
+              <ToggleSwitch>
+                <input 
+                  type="checkbox" 
+                  checked={hasGuarantor}
+                  onChange={(e) => setHasGuarantor(e.target.checked)}
+                />
+                <span className="slider"></span>
+              </ToggleSwitch>
+            </ToggleContainer>
+            
             <FormGrid>
               <FormGroup>
                 <Label>Mijoz ismi *</Label>

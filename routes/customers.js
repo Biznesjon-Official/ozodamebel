@@ -63,7 +63,7 @@ router.post('/', protect, auditLog('create', 'customer'), async (req, res) => {
 
     // Telefon raqamlarni normalize qilish
     const normalizedPhone = normalizePhone(phone);
-    const normalizedGuarantorPhone = normalizePhone(guarantorPhone);
+    const normalizedGuarantorPhone = guarantorPhone ? normalizePhone(guarantorPhone) : null;
 
     // Mijoz ma'lumotlarini yaratish
     const customerData = {
@@ -76,17 +76,6 @@ router.post('/', protect, auditLog('create', 'customer'), async (req, res) => {
       houseNumber,
       passportSeries,
       profileImages,
-      
-      guarantor: {
-        name: guarantorName,
-        phone: normalizedGuarantorPhone,
-        birthDate: guarantorBirthDate,
-        region: guarantorRegion,
-        district: guarantorDistrict,
-        address: guarantorAddress,
-        houseNumber: guarantorHouseNumber,
-        passportSeries: guarantorPassport
-      },
       
       product: {
         name: productName,
@@ -108,6 +97,20 @@ router.post('/', protect, auditLog('create', 'customer'), async (req, res) => {
       
       createdBy: req.user._id
     };
+    
+    // Add guarantor info only if provided
+    if (guarantorName && normalizedGuarantorPhone) {
+      customerData.guarantor = {
+        name: guarantorName,
+        phone: normalizedGuarantorPhone,
+        birthDate: guarantorBirthDate,
+        region: guarantorRegion,
+        district: guarantorDistrict,
+        address: guarantorAddress,
+        houseNumber: guarantorHouseNumber,
+        passportSeries: guarantorPassport
+      };
+    }
 
     const customer = await Customer.create(customerData);
     
