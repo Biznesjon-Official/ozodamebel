@@ -126,9 +126,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 // Body parsing middleware with size limits
-const maxFileSize = parseInt(process.env.MAX_FILE_SIZE) || 10485760; // 10MB default
+const maxFileSize = parseInt(process.env.MAX_FILE_SIZE) || 52428800; // 50MB default
 app.use(express.json({ 
-  limit: '10mb',
+  limit: '50mb',
   verify: (req, res, buf) => {
     if (buf.length > maxFileSize) {
       throw new Error('Request entity too large');
@@ -137,7 +137,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ 
   extended: true, 
-  limit: '10mb',
+  limit: '50mb',
   verify: (req, res, buf) => {
     if (buf.length > maxFileSize) {
       throw new Error('Request entity too large');

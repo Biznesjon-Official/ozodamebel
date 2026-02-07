@@ -741,18 +741,39 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
       
+      // Set canvas size (compress to max 1920x1080)
+      const maxWidth = 1920;
+      const maxHeight = 1080;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      
+      // Calculate aspect ratio
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, width, height);
+      
+      // Compress to JPEG with 0.7 quality (smaller file size)
       canvas.toBlob((blob) => {
         if (blob) {
+          console.log('📸 Original blob size:', blob.size, 'bytes');
           const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+          console.log('📸 Compressed file size:', file.size, 'bytes');
           handleImageUpload([file]);
           stopCamera();
         }
-      }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 0.7); // 70% quality for smaller file size
     }
   };
 
