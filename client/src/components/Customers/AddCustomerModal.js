@@ -1078,17 +1078,27 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
 
       console.log('📤 Sending customer data with images:', customerData.profileImages);
       console.log('📤 Has guarantor:', hasGuarantor);
+      console.log('📤 Full customer data:', customerData);
+      console.log('📤 Calling API: createCustomer...');
+      
       const response = await apiService.createCustomer(customerData);
       
+      console.log('📤 API Response:', response);
+      
       if (response.success) {
+        console.log('✅ Customer created successfully!');
+        alert('✅ Mijoz muvaffaqiyatli saqlandi!');
         onSuccess();
       } else {
+        console.error('❌ API returned error:', response.message);
         throw new Error(response.message || 'Mijoz qo\'shishda xatolik');
       }
     } catch (error) {
-      console.error('Error adding customer:', error);
-      alert('Mijoz qo\'shishda xatolik: ' + error.message);
+      console.error('❌ Error adding customer:', error);
+      console.error('❌ Error stack:', error.stack);
+      alert('❌ Mijoz qo\'shishda xatolik: ' + error.message);
     } finally {
+      console.log('📤 Setting loading to false');
       setLoading(false);
     }
   };

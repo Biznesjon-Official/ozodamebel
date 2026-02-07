@@ -188,6 +188,10 @@ class ApiService {
   }
 
   async createCustomer(customerData) {
+    console.log('🌐 API: createCustomer called');
+    console.log('🌐 API URL:', `${this.baseURL}/customers`);
+    console.log('🌐 Customer data:', customerData);
+    
     return this.request('/customers', {
       method: 'POST',
       body: JSON.stringify(customerData)
