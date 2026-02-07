@@ -125,24 +125,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-// Body parsing middleware with size limits
-const maxFileSize = parseInt(process.env.MAX_FILE_SIZE) || 52428800; // 50MB default
+// Body parsing middleware - no size limits for file uploads
 app.use(express.json({ 
-  limit: '50mb',
-  verify: (req, res, buf) => {
-    if (buf.length > maxFileSize) {
-      throw new Error('Request entity too large');
-    }
-  }
+  limit: '100mb'
 }));
 app.use(express.urlencoded({ 
   extended: true, 
-  limit: '50mb',
-  verify: (req, res, buf) => {
-    if (buf.length > maxFileSize) {
-      throw new Error('Request entity too large');
-    }
-  }
+  limit: '100mb'
 }));
 app.use('/uploads', express.static('uploads'));
 
