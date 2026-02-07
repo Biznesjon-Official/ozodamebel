@@ -17,8 +17,11 @@ uploadDirs.forEach(dir => {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const type = req.body.type || 'document';
-    let uploadPath = 'uploads';
+    // Default to documents
+    let uploadPath = 'uploads/documents';
+    
+    // Try to get type from query parameter or default to documents
+    const type = req.query.type || req.headers['x-upload-type'] || 'document';
     
     switch (type) {
       case 'profile':
@@ -31,9 +34,10 @@ const storage = multer.diskStorage({
         uploadPath = 'uploads/contracts';
         break;
       default:
-        uploadPath = 'uploads';
+        uploadPath = 'uploads/documents';
     }
     
+    console.log('📁 Upload destination:', uploadPath, 'Type:', type);
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -107,7 +111,14 @@ router.post('/', protect, (req, res, next) => {
 
     // Construct file URL
     const type = req.body.type || 'documents';
-    const fileUrl = `/uploads/${type}/${req.file.filename}`;
+    // Map type to correct folder name
+    const folderMap = {
+      'profile': 'profiles',
+      'document': 'documents',
+      'contract': 'contracts'
+    };
+    const folder = folderMap[type] || type;
+    const fileUrl = `/uploads/${folder}/${req.file.filename}`;
 
     const fileInfo = {
       filename: req.file.filename,

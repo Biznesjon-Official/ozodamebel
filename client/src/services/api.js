@@ -15,10 +15,6 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-console.log('🌐 API Base URL:', API_BASE_URL);
-console.log('🌐 Environment:', process.env.NODE_ENV);
-console.log('🌐 Hostname:', window.location.hostname);
-
 // Get full image URL
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
@@ -38,8 +34,13 @@ export const getImageUrl = (imagePath) => {
     return imagePath;
   }
   
-  // Construct full URL (for old file-based images)
-  const baseUrl = API_BASE_URL.replace('/api', ''); // Remove /api from base URL
+  // Construct full URL for relative paths
+  // In development: http://localhost:3008/uploads/profiles/file-xxx.jpg
+  // In production: https://yourdomain.com/uploads/profiles/file-xxx.jpg
+  const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3008'  // Development backend URL
+    : window.location.origin;   // Production URL
+  
   return `${baseUrl}${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
 };
 
@@ -188,10 +189,6 @@ class ApiService {
   }
 
   async createCustomer(customerData) {
-    console.log('🌐 API: createCustomer called');
-    console.log('🌐 API URL:', `${this.baseURL}/customers`);
-    console.log('🌐 Customer data:', customerData);
-    
     return this.request('/customers', {
       method: 'POST',
       body: JSON.stringify(customerData)
@@ -315,20 +312,15 @@ class ApiService {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    // Add type as custom header for multer destination
+    headers['X-Upload-Type'] = type;
 
     try {
-      console.log('📤 Uploading to:', `${this.baseURL}/upload`);
-      console.log('📤 File:', file.name, 'Type:', type);
-      console.log('📤 Token:', token ? 'Present' : 'Missing');
-      
-      const response = await fetch(`${this.baseURL}/upload`, {
+      const response = await fetch(`${this.baseURL}/upload?type=${type}`, {
         method: 'POST',
         headers,
         body: formData
       });
-
-      console.log('📤 Response status:', response.status);
-      console.log('📤 Response headers:', response.headers);
       
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
@@ -339,7 +331,6 @@ class ApiService {
       }
 
       const data = await response.json();
-      console.log('📤 Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'File upload failed');

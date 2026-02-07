@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form';
 import apiService from '../../services/api';
 import { formatCurrency, formatPhoneInput, formatCurrencyInput, parseCurrency, validatePhoneNumber, formatPassportInput, validatePassport } from '../../utils/formatters';
 import { regionsList, getDistricts } from '../../data/regions';
+import { useNotification } from '../../contexts/NotificationContext';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -465,6 +466,7 @@ const CalculationRow = styled.div`
 `;
 
 const AddCustomerModal = ({ onClose, onSuccess }) => {
+  const { showSuccess, showError } = useNotification();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -525,26 +527,15 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
       }
     });
     
-    // Guarantor phone only required if hasGuarantor is true
-    if (hasGuarantor) {
-      register('guarantorPhone', { 
-        required: 'Kafil telefon raqami majburiy',
-        validate: {
-          length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
-        }
-      });
-      register('guarantorName', { required: 'Kafil ismi majburiy' });
-    } else {
-      // Unregister guarantor fields when toggle is OFF
-      register('guarantorPhone', { required: false });
-      register('guarantorName', { required: false });
-    }
+    // Guarantor fields are always optional
+    register('guarantorPhone', { required: false });
+    register('guarantorName', { required: false });
     
     register('originalPrice', {
       required: 'Asl narx majburiy',
       validate: value => parseCurrency(originalPriceValue) > 0 || 'Asl narx 0 dan katta bo\'lishi kerak'
     });
-  }, [register, originalPriceValue, hasGuarantor]);
+  }, [register, originalPriceValue]);
 
   // Clear browser auto-fill when component mounts
   useEffect(() => {
@@ -660,22 +651,8 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
   };
 
   const handleImageUpload = async (files) => {
-    console.log('📤 handleImageUpload called');
-    console.log('📤 Files received:', files);
-    console.log('📤 Files type:', typeof files);
-    console.log('📤 Files length:', files?.length);
-    
     const fileArray = Array.from(files);
-    console.log('📤 File array:', fileArray);
-    console.log('📤 File array length:', fileArray.length);
-    
-    const validImages = fileArray.filter(file => {
-      const isValid = file.type.startsWith('image/');
-      console.log(`📤 File ${file.name}: type=${file.type}, size=${file.size}, valid=${isValid}`);
-      return isValid;
-    });
-    console.log('📤 Valid images:', validImages);
-    console.log('📤 Valid images count:', validImages.length);
+    const validImages = fileArray.filter(file => file.type.startsWith('image/'));
     
     if (validImages.length > 0) {
       // Barcha rasmlarni compress qilib, preview yaratish
@@ -684,51 +661,29 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
       
       for (const file of validImages) {
         try {
-          console.log('📤 Processing file:', file.name, 'Original size:', file.size);
-          
           // Compress image before upload
           const compressedFile = await compressImage(file);
-          console.log('📤 Compressed file size:', compressedFile.size);
-          
           compressedFiles.push(compressedFile);
           
           // Create preview
           const preview = await new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (e) => {
-              console.log('✅ File read successfully:', file.name);
-              resolve(e.target.result);
-            };
-            reader.onerror = (e) => {
-              console.error('❌ Error reading file:', file.name, e);
-              reject(e);
-            };
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(e);
             reader.readAsDataURL(compressedFile);
           });
           newPreviews.push(preview);
         } catch (error) {
-          console.error('❌ Error processing file:', error);
-          alert(`Rasmni qayta ishlashda xatolik: ${file.name}`);
+          console.error('Error processing file:', error);
+          showError(`Rasmni qayta ishlashda xatolik: ${file.name}`);
         }
       }
       
       // Barcha rasmlar yuklanganidan keyin state'ni yangilash
-      console.log('📤 Adding', compressedFiles.length, 'images to state');
-      setUploadedImages(prev => {
-        const updated = [...prev, ...compressedFiles];
-        console.log('📤 Updated uploadedImages:', updated.length);
-        return updated;
-      });
-      setImagePreviews(prev => {
-        const updated = [...prev, ...newPreviews];
-        console.log('📤 Updated imagePreviews:', updated.length);
-        return updated;
-      });
-      
-      console.log('✅ Images successfully added!');
+      setUploadedImages(prev => [...prev, ...compressedFiles]);
+      setImagePreviews(prev => [...prev, ...newPreviews]);
     } else {
-      console.log('❌ No valid images found');
-      alert('Hech qanday to\'g\'ri rasm topilmadi. Iltimos, rasm faylini tanlang.');
+      showError('Hech qanday to\'g\'ri rasm topilmadi. Iltimos, rasm faylini tanlang.');
     }
   };
 
@@ -770,7 +725,6 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
                 type: 'image/jpeg',
                 lastModified: Date.now()
               });
-              console.log(`📸 Compression: ${file.size} → ${compressedFile.size} bytes (${Math.round((1 - compressedFile.size / file.size) * 100)}% smaller)`);
               resolve(compressedFile);
             } else {
               reject(new Error('Blob yaratishda xatolik'));
@@ -787,37 +741,18 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
 
   const handleDrop = (e) => {
     e.preventDefault();
-    console.log('Files dropped:', e.dataTransfer.files);
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       handleImageUpload(files);
-    } else {
-      console.log('No files dropped');
     }
   };
 
   const handleFileSelect = (e) => {
-    console.log('📸 File input changed');
-    console.log('📸 Event target:', e.target.id);
-    console.log('📸 Files:', e.target.files);
-    console.log('📸 Files length:', e.target.files?.length);
-    
     const files = e.target.files;
     if (files && files.length > 0) {
-      console.log('📸 Processing', files.length, 'files');
-      // Log each file details
-      Array.from(files).forEach((file, index) => {
-        console.log(`📸 File ${index + 1}:`, {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          lastModified: file.lastModified
-        });
-      });
       handleImageUpload(files);
     } else {
-      console.log('❌ No files selected');
-      alert('Rasm tanlanmadi. Iltimos, qaytadan urinib ko\'ring.');
+      showError('Rasm tanlanmadi. Iltimos, qaytadan urinib ko\'ring.');
     }
     // Reset input value to allow selecting same file again
     e.target.value = '';
@@ -841,7 +776,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Kamera ochishda xatolik:', error);
-      alert('Kamera ochishda xatolik. Iltimos, brauzerga kamera ruxsatini bering.');
+      showError('Kamera ochishda xatolik. Iltimos, brauzerga kamera ruxsatini bering.');
     }
   };
 
@@ -883,9 +818,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
       // Compress to JPEG with 0.6 quality (smaller file size)
       canvas.toBlob((blob) => {
         if (blob) {
-          console.log('📸 Camera photo size:', blob.size, 'bytes');
           const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
-          console.log('📸 File size:', file.size, 'bytes', `(${Math.round(file.size / 1024)}KB)`);
           handleImageUpload([file]);
           stopCamera();
         }
@@ -915,36 +848,44 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
       case 3:
         // Step 3: Guarantor or Product info validation (depends on hasGuarantor)
         if (hasGuarantor) {
-          // Validate guarantor info
-          const guarantorName = watch('guarantorName');
-          return guarantorName && guarantorName.trim() !== '' && 
-                 guarantorPhoneValue && guarantorPhoneValue.replace(/\D/g, '').length === 9;
+          // Guarantor info is now optional - always return true
+          return true;
         } else {
           // Validate product info (step 3 becomes product step when no guarantor)
           const productName = watch('productName');
           const profitPercentage = watch('profitPercentage');
-          const hasValidMarkup = markupType === 'percent' 
-            ? (profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '')
-            : (markupAmount !== undefined && markupAmount !== null);
+          
+          // Check if markup is provided (can be 0)
+          let hasValidMarkup = false;
+          if (markupType === 'percent') {
+            hasValidMarkup = profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '';
+          } else {
+            hasValidMarkup = markupAmountValue !== undefined && markupAmountValue !== null && markupAmountValue !== '';
+          }
           
           return productName && productName.trim() !== '' && 
                  originalPrice > 0 && 
                  hasValidMarkup &&
-                 installmentMonths > 0;
+                 watch('installmentMonths') > 0;
         }
         
       case 4:
         // Step 4: Product info validation (only when hasGuarantor is true)
         const productName = watch('productName');
         const profitPercentage = watch('profitPercentage');
-        const hasValidMarkup = markupType === 'percent' 
-          ? (profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '')
-          : (markupAmount !== undefined && markupAmount !== null);
+        
+        // Check if markup is provided (can be 0)
+        let hasValidMarkup = false;
+        if (markupType === 'percent') {
+          hasValidMarkup = profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '';
+        } else {
+          hasValidMarkup = markupAmountValue !== undefined && markupAmountValue !== null && markupAmountValue !== '';
+        }
         
         return productName && productName.trim() !== '' && 
                originalPrice > 0 && 
                hasValidMarkup &&
-               installmentMonths > 0;
+               watch('installmentMonths') > 0;
         
       default:
         return true;
@@ -968,27 +909,18 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
   };
 
   const onSubmit = async (data) => {
-    console.log('🚀 Form submitted!');
-    console.log('🚀 Has guarantor:', hasGuarantor);
-    console.log('🚀 Form data:', data);
-    console.log('🚀 Current step:', currentStep);
-    console.log('🚀 Uploaded images:', uploadedImages.length);
-    
     // Validate required fields
     if (!data.customerName || !data.customerPhone) {
-      alert('Mijoz ismi va telefon raqami majburiy!');
+      showError('Mijoz ismi va telefon raqami majburiy!');
       return;
     }
     
     if (!data.productName || !originalPriceValue) {
-      alert('Mahsulot nomi va narxi majburiy!');
+      showError('Mahsulot nomi va narxi majburiy!');
       return;
     }
     
-    if (hasGuarantor && (!data.guarantorName || !data.guarantorPhone)) {
-      alert('Kafil ismi va telefon raqami majburiy!');
-      return;
-    }
+    // Guarantor is now optional - no validation needed
     
     try {
       setLoading(true);
@@ -996,47 +928,35 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
       // Upload images first if exist
       let imageUrls = [];
       if (uploadedImages.length > 0) {
-        console.log('📤 Starting image upload for', uploadedImages.length, 'images');
-        console.log('📤 Uploaded images:', uploadedImages);
         for (const image of uploadedImages) {
-          console.log('📤 Uploading image:', image.name, 'Type:', image.type, 'Size:', image.size);
-          
           // Ensure image is a proper File object
           let fileToUpload = image;
           if (!(image instanceof File)) {
-            console.log('📤 Converting to File object');
             fileToUpload = new File([image], image.name || `camera-${Date.now()}.jpg`, { 
               type: image.type || 'image/jpeg' 
             });
           }
           
           try {
-            console.log('📤 Uploading file:', fileToUpload.name, 'Type:', fileToUpload.type, 'Size:', fileToUpload.size);
             const imageResponse = await apiService.uploadFile(fileToUpload, 'profile');
-            console.log('📤 Upload response:', imageResponse);
             if (imageResponse.success) {
               // Use file.url or url from response
               const imageUrl = imageResponse.file?.url || imageResponse.url || imageResponse.filePath;
-              console.log('📤 Image URL:', imageUrl);
               if (imageUrl) {
                 imageUrls.push(imageUrl);
-                console.log('✅ Image added to URLs array:', imageUrl);
               } else {
-                console.error('❌ No URL found in response:', imageResponse);
-                alert('Rasm URL topilmadi. Iltimos, qaytadan urinib ko\'ring.');
+                console.error('No URL found in response:', imageResponse);
+                showError('Rasm URL topilmadi. Iltimos, qaytadan urinib ko\'ring.');
               }
             } else {
-              console.error('❌ Upload failed:', imageResponse);
-              alert(`Rasm yuklashda xatolik: ${imageResponse.message || 'Noma\'lum xatolik'}`);
+              console.error('Upload failed:', imageResponse);
+              showError(`Rasm yuklashda xatolik: ${imageResponse.message || 'Noma\'lum xatolik'}`);
             }
           } catch (error) {
-            console.error('📤 Upload error for image:', fileToUpload.name, error);
-            alert(`Rasm yuklashda xatolik: ${error.message}`);
+            console.error('Upload error for image:', fileToUpload.name, error);
+            showError(`Rasm yuklashda xatolik: ${error.message}`);
           }
         }
-        console.log('📤 Final image URLs:', imageUrls);
-      } else {
-        console.log('📤 No images to upload');
       }
 
       // Prepare customer data
@@ -1065,8 +985,8 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         nextPaymentDate: data.nextPaymentDate || null
       };
       
-      // Add guarantor info only if hasGuarantor is true
-      if (hasGuarantor) {
+      // Add guarantor info only if provided (optional)
+      if (data.guarantorName || data.guarantorPhone) {
         customerData.guarantorName = data.guarantorName;
         customerData.guarantorPhone = data.guarantorPhone;
         customerData.guarantorBirthDate = data.guarantorBirthDate;
@@ -1076,30 +996,19 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         customerData.guarantorHouseNumber = data.guarantorHouseNumber;
         customerData.guarantorPassport = data.guarantorPassport;
       }
-
-      console.log('📤 Sending customer data with images:', customerData.profileImages);
-      console.log('📤 Has guarantor:', hasGuarantor);
-      console.log('📤 Full customer data:', customerData);
-      console.log('📤 Calling API: createCustomer...');
       
       const response = await apiService.createCustomer(customerData);
       
-      console.log('📤 API Response:', response);
-      
       if (response.success) {
-        console.log('✅ Customer created successfully!');
-        alert('✅ Mijoz muvaffaqiyatli saqlandi!');
+        showSuccess('Mijoz muvaffaqiyatli saqlandi!');
         onSuccess();
       } else {
-        console.error('❌ API returned error:', response.message);
         throw new Error(response.message || 'Mijoz qo\'shishda xatolik');
       }
     } catch (error) {
-      console.error('❌ Error adding customer:', error);
-      console.error('❌ Error stack:', error.stack);
-      alert('❌ Mijoz qo\'shishda xatolik: ' + error.message);
+      console.error('Error adding customer:', error);
+      showError('Mijoz qo\'shishda xatolik: ' + error.message);
     } finally {
-      console.log('📤 Setting loading to false');
       setLoading(false);
     }
   };
@@ -1902,7 +1811,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
               <Button
                 type="submit"
                 className="primary"
-                disabled={loading}
+                disabled={loading || !isCurrentStepValid}
               >
                 {loading ? 'Saqlanmoqda...' : 'Saqlash'}
                 <Check size={16} />

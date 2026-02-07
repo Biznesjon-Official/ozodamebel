@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form';
 import apiService from '../../services/api';
 import { formatCurrency, formatPhoneInput, formatCurrencyInput, parseCurrency, validatePhoneNumber, formatPassportInput, validatePassport } from '../../utils/formatters';
 import { regionsList, getDistricts } from '../../data/regions';
+import { useNotification } from '../../contexts/NotificationContext';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -391,6 +392,7 @@ const CalculationRow = styled.div`
 `;
 
 const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
+  const { showSuccess, showError } = useNotification();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -443,12 +445,8 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
         length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
       }
     });
-    register('guarantorPhone', { 
-      required: 'Kafil telefon raqami majburiy',
-      validate: {
-        length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
-      }
-    });
+    // Guarantor phone is now optional
+    register('guarantorPhone', { required: false });
   }, [register]);
 
   // Watch form values for calculations
@@ -616,62 +614,36 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
   }, [customer, setValue, formatPhoneInput]);
 
   const handleImageUpload = (files) => {
-    console.log('📤 handleImageUpload called (Edit mode)');
-    console.log('📤 Files received:', files);
-    console.log('📤 Files length:', files?.length);
-    
     const fileArray = Array.from(files);
-    console.log('📤 File array length:', fileArray.length);
     
-    const validImages = fileArray.filter(file => {
-      const isValid = file.type.startsWith('image/');
-      console.log(`📤 File ${file.name}: type=${file.type}, size=${file.size}, valid=${isValid}`);
-      return isValid;
-    });
-    console.log('📤 Valid images count:', validImages.length);
+    const validImages = fileArray.filter(file => file.type.startsWith('image/'));
     
     if (validImages.length > 0) {
-      console.log('📤 Adding', validImages.length, 'new images');
-      
       // Compress and add images
       validImages.forEach(async (file) => {
         try {
-          console.log('📤 Processing file:', file.name, 'Original size:', file.size);
-          
           // Compress image
           const compressedFile = await compressImage(file);
-          console.log('📤 Compressed file size:', compressedFile.size);
           
-          setUploadedImages(prev => {
-            const updated = [...prev, compressedFile];
-            console.log('📤 Updated uploadedImages:', updated.length);
-            return updated;
-          });
+          setUploadedImages(prev => [...prev, compressedFile]);
           
           // Create preview
           const reader = new FileReader();
           reader.onload = (e) => {
-            console.log('✅ File read successfully:', file.name);
-            setImagePreviews(prev => {
-              const updated = [...prev, e.target.result];
-              console.log('📤 Updated imagePreviews:', updated.length);
-              return updated;
-            });
+            setImagePreviews(prev => [...prev, e.target.result]);
           };
           reader.onerror = (e) => {
-            console.error('❌ Error reading file:', file.name, e);
-            alert(`Rasmni o'qishda xatolik: ${file.name}`);
+            console.error('Error reading file:', file.name, e);
+            showError(`Rasmni o'qishda xatolik: ${file.name}`);
           };
           reader.readAsDataURL(compressedFile);
         } catch (error) {
-          console.error('❌ Error processing file:', error);
-          alert(`Rasmni qayta ishlashda xatolik: ${file.name}`);
+          console.error('Error processing file:', error);
+          showError(`Rasmni qayta ishlashda xatolik: ${file.name}`);
         }
       });
-      console.log('✅ Images successfully added!');
     } else {
-      console.log('❌ No valid images found');
-      alert('Hech qanday to\'g\'ri rasm topilmadi. Iltimos, rasm faylini tanlang.');
+      showError('Hech qanday to\'g\'ri rasm topilmadi. Iltimos, rasm faylini tanlang.');
     }
   };
 
@@ -713,7 +685,6 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
                 type: 'image/jpeg',
                 lastModified: Date.now()
               });
-              console.log(`📸 Compression: ${file.size} → ${compressedFile.size} bytes (${Math.round((1 - compressedFile.size / file.size) * 100)}% smaller)`);
               resolve(compressedFile);
             } else {
               reject(new Error('Blob yaratishda xatolik'));
@@ -730,7 +701,6 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
 
   const handleDrop = (e) => {
     e.preventDefault();
-    console.log('📸 Files dropped');
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       handleImageUpload(files);
@@ -738,27 +708,11 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
   };
 
   const handleFileSelect = (e) => {
-    console.log('📸 File input changed (Edit mode)');
-    console.log('📸 Event target:', e.target.id);
-    console.log('📸 Files:', e.target.files);
-    console.log('📸 Files length:', e.target.files?.length);
-    
     const files = e.target.files;
     if (files && files.length > 0) {
-      console.log('📸 Processing', files.length, 'files');
-      // Log each file details
-      Array.from(files).forEach((file, index) => {
-        console.log(`📸 File ${index + 1}:`, {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          lastModified: file.lastModified
-        });
-      });
       handleImageUpload(files);
     } else {
-      console.log('❌ No files selected');
-      alert('Rasm tanlanmadi. Iltimos, qaytadan urinib ko\'ring.');
+      showError('Rasm tanlanmadi. Iltimos, qaytadan urinib ko\'ring.');
     }
     // Reset input value to allow selecting same file again
     e.target.value = '';
@@ -792,7 +746,7 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Kamera ochishda xatolik:', error);
-      alert('Kamera ochishda xatolik. Iltimos, brauzerga kamera ruxsatini bering.');
+      showError('Kamera ochishda xatolik. Iltimos, brauzerga kamera ruxsatini bering.');
     }
   };
 
@@ -834,9 +788,7 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       // Compress to JPEG with 0.6 quality (smaller file size)
       canvas.toBlob((blob) => {
         if (blob) {
-          console.log('📸 Camera photo size:', blob.size, 'bytes');
           const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
-          console.log('📸 File size:', file.size, 'bytes', `(${Math.round(file.size / 1024)}KB)`);
           handleImageUpload([file]);
           stopCamera();
         }
@@ -876,10 +828,8 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
                customerPhoneValue && customerPhoneValue.replace(/\D/g, '').length === 9;
         
       case 3:
-        // Step 3: Guarantor info validation
-        const guarantorName = watch('guarantorName');
-        return guarantorName && guarantorName.trim() !== '' && 
-               guarantorPhoneValue && guarantorPhoneValue.replace(/\D/g, '').length === 9;
+        // Step 3: Guarantor info is now optional - always return true
+        return true;
         
       case 4:
         // Step 4: Product info validation
@@ -887,9 +837,18 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
         const profitPercentage = watch('profitPercentage');
         const installmentMonths = watch('installmentMonths');
         
+        // Check if markup is provided (can be 0)
+        let hasValidMarkup = false;
+        if (markupType === 'percent') {
+          hasValidMarkup = profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '' && !isNaN(parseFloat(profitPercentage));
+        } else {
+          // For amount type, check if markupAmountValue has been entered (even if 0)
+          hasValidMarkup = markupAmountValue !== undefined && markupAmountValue !== null && markupAmountValue !== '';
+        }
+        
         return productName && productName.trim() !== '' &&
                originalPriceValue && parseCurrency(originalPriceValue) > 0 &&
-               profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '' &&
+               hasValidMarkup &&
                installmentMonths && installmentMonths > 0;
         
       default:
@@ -907,50 +866,40 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       // Upload new images first if exist
       let newImageUrls = [];
       if (uploadedImages.length > 0) {
-        console.log('📤 Starting image upload for', uploadedImages.length, 'new images');
         for (const image of uploadedImages) {
-          console.log('📤 Uploading image:', image.name, 'Type:', image.type, 'Size:', image.size);
-          
           // Ensure image is a proper File object
           let fileToUpload = image;
           if (!(image instanceof File)) {
-            console.log('📤 Converting to File object');
             fileToUpload = new File([image], image.name || `camera-${Date.now()}.jpg`, { 
               type: image.type || 'image/jpeg' 
             });
           }
           
           try {
-            console.log('📤 Uploading file:', fileToUpload.name, 'Type:', fileToUpload.type, 'Size:', fileToUpload.size);
             const imageResponse = await apiService.uploadFile(fileToUpload, 'profile');
-            console.log('📤 Upload response:', imageResponse);
             if (imageResponse.success) {
               // Use file.url or url from response
               const imageUrl = imageResponse.file?.url || imageResponse.url || imageResponse.filePath;
-              console.log('📤 Image URL:', imageUrl);
               if (imageUrl) {
                 newImageUrls.push(imageUrl);
-                console.log('✅ Image added to URLs array:', imageUrl);
               } else {
-                console.error('❌ No URL found in response:', imageResponse);
-                alert('Rasm URL topilmadi. Iltimos, qaytadan urinib ko\'ring.');
+                console.error('No URL found in response:', imageResponse);
+                showError('Rasm URL topilmadi. Iltimos, qaytadan urinib ko\'ring.');
               }
             } else {
-              console.error('❌ Upload failed:', imageResponse);
-              alert(`Rasm yuklashda xatolik: ${imageResponse.message || 'Noma\'lum xatolik'}`);
+              console.error('Upload failed:', imageResponse);
+              showError(`Rasm yuklashda xatolik: ${imageResponse.message || 'Noma\'lum xatolik'}`);
             }
           } catch (error) {
-            console.error('📤 Upload error for image:', fileToUpload.name, error);
-            alert(`Rasm yuklashda xatolik: ${error.message}`);
+            console.error('Upload error for image:', fileToUpload.name, error);
+            showError(`Rasm yuklashda xatolik: ${error.message}`);
           }
         }
-        console.log('📤 New image URLs:', newImageUrls);
       }
 
       // Combine existing images with new ones
       const existingImages = imagePreviews.filter(img => typeof img === 'string' && !img.startsWith('blob:'));
       const allImageUrls = [...existingImages, ...newImageUrls];
-      console.log('📤 All image URLs (existing + new):', allImageUrls);
 
       // Prepare customer data
       const customerData = {
@@ -964,15 +913,6 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
         passportSeries: data.customerPassport,
         profileImages: allImageUrls,
         
-        // Guarantor info
-        guarantorName: data.guarantorName,
-        guarantorPhone: data.guarantorPhone,
-        guarantorBirthDate: data.guarantorBirthDate,
-        guarantorRegion: data.guarantorRegion,
-        guarantorDistrict: data.guarantorDistrict,
-        guarantorAddress: data.guarantorAddress,
-        guarantorPassport: data.guarantorPassport,
-        
         // Product info
         productName: data.productName,
         originalPrice: parseFloat(data.originalPrice),
@@ -982,17 +922,29 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
         monthlyPayment: monthlyPayment,
         initialPayment: parseFloat(data.initialPayment) || 0
       };
+      
+      // Add guarantor info only if provided (optional)
+      if (data.guarantorName || data.guarantorPhone) {
+        customerData.guarantorName = data.guarantorName;
+        customerData.guarantorPhone = data.guarantorPhone;
+        customerData.guarantorBirthDate = data.guarantorBirthDate;
+        customerData.guarantorRegion = data.guarantorRegion;
+        customerData.guarantorDistrict = data.guarantorDistrict;
+        customerData.guarantorAddress = data.guarantorAddress;
+        customerData.guarantorPassport = data.guarantorPassport;
+      }
 
       const response = await apiService.updateCustomer(customer._id, customerData);
       
       if (response.success) {
+        showSuccess('Mijoz muvaffaqiyatli yangilandi!');
         onSuccess();
       } else {
         throw new Error(response.message || 'Mijoz yangilashda xatolik');
       }
     } catch (error) {
       console.error('Error updating customer:', error);
-      alert('Mijoz yangilashda xatolik: ' + error.message);
+      showError('Mijoz yangilashda xatolik: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -1222,9 +1174,9 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
             <h3>Kafil ma'lumotlari</h3>
             <FormGrid>
               <FormGroup>
-                <Label>Kafil ismi *</Label>
+                <Label>Kafil ismi</Label>
                 <Input
-                  {...register('guarantorName', { required: 'Kafil ismi majburiy' })}
+                  {...register('guarantorName')}
                   placeholder="To'liq ism"
                   className={errors.guarantorName ? 'error' : ''}
                 />
@@ -1232,7 +1184,7 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               </FormGroup>
 
               <FormGroup>
-                <Label>Telefon raqam *</Label>
+                <Label>Telefon raqam</Label>
                 <div style={{ position: 'relative' }}>
                   <span style={{
                     position: 'absolute',
