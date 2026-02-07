@@ -867,7 +867,15 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
               <Button
                 type="button"
                 className="primary"
-                onClick={startCamera}
+                onClick={() => {
+                  // Mobilda to'g'ridan-to'g'ri kamera ochiladi
+                  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    document.getElementById('cameraInput').click();
+                  } else {
+                    // Desktop/noutbukda video stream
+                    startCamera();
+                  }
+                }}
                 style={{ flex: 1, maxWidth: '200px' }}
               >
                 <Camera size={20} />
@@ -908,6 +916,15 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
               type="file"
               accept="image/*"
               multiple
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            
+            <input
+              id="cameraInput"
+              type="file"
+              accept="image/*"
+              capture="environment"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
