@@ -970,6 +970,24 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
     console.log('🚀 Form submitted!');
     console.log('🚀 Has guarantor:', hasGuarantor);
     console.log('🚀 Form data:', data);
+    console.log('🚀 Current step:', currentStep);
+    console.log('🚀 Uploaded images:', uploadedImages.length);
+    
+    // Validate required fields
+    if (!data.customerName || !data.customerPhone) {
+      alert('Mijoz ismi va telefon raqami majburiy!');
+      return;
+    }
+    
+    if (!data.productName || !originalPriceValue) {
+      alert('Mahsulot nomi va narxi majburiy!');
+      return;
+    }
+    
+    if (hasGuarantor && (!data.guarantorName || !data.guarantorPhone)) {
+      alert('Kafil ismi va telefon raqami majburiy!');
+      return;
+    }
     
     try {
       setLoading(true);
