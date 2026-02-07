@@ -533,6 +533,11 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
           length: value => value && value.length === 9 || 'Telefon raqam 9 ta raqamdan iborat bo\'lishi kerak'
         }
       });
+      register('guarantorName', { required: 'Kafil ismi majburiy' });
+    } else {
+      // Unregister guarantor fields when toggle is OFF
+      register('guarantorPhone', { required: false });
+      register('guarantorName', { required: false });
     }
     
     register('originalPrice', {
@@ -962,6 +967,10 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
   };
 
   const onSubmit = async (data) => {
+    console.log('🚀 Form submitted!');
+    console.log('🚀 Has guarantor:', hasGuarantor);
+    console.log('🚀 Form data:', data);
+    
     try {
       setLoading(true);
       
