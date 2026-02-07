@@ -563,8 +563,8 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
 
   // Watch form values for calculations
   const originalPrice = parseCurrency(originalPriceValue) || 0;
-  const profitPercentage = watch('profitPercentage') || 0;
-  const markupAmount = parseCurrency(markupAmountValue) || 0;
+  const profitPercentage = watch('profitPercentage');
+  const markupAmount = parseCurrency(markupAmountValue);
   const installmentMonths = watch('installmentMonths') || 1;
   const initialPayment = parseCurrency(initialPaymentValue) || 0;
 
@@ -572,10 +572,11 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
   let sellingPrice = originalPrice;
   let actualMarkup = 0;
   
-  if (markupType === 'percent' && profitPercentage > 0) {
-    actualMarkup = originalPrice * profitPercentage / 100;
+  if (markupType === 'percent' && profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '') {
+    const percentValue = parseFloat(profitPercentage) || 0;
+    actualMarkup = originalPrice * percentValue / 100;
     sellingPrice = originalPrice + actualMarkup;
-  } else if (markupType === 'amount' && markupAmount > 0) {
+  } else if (markupType === 'amount' && markupAmount !== undefined && markupAmount !== null) {
     actualMarkup = markupAmount;
     sellingPrice = originalPrice + actualMarkup;
   }
@@ -1618,7 +1619,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
                 </FormGroup>
               </FormGrid>
 
-              {originalPrice > 0 && (profitPercentage > 0 || markupAmount > 0) && installmentMonths > 0 && (
+              {originalPrice > 0 && (profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '' || markupAmount !== undefined && markupAmount !== null) && installmentMonths > 0 && (
                 <CalculationContainer>
                   <h4>Hisob-kitob</h4>
                   <CalculationRow>
@@ -1626,7 +1627,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
                     <span>{formatCurrency(originalPrice)} so'm</span>
                   </CalculationRow>
                   <CalculationRow>
-                    <span>Ustama {markupType === 'percent' ? `(${profitPercentage}%)` : ''}:</span>
+                    <span>Ustama {markupType === 'percent' ? `(${profitPercentage || 0}%)` : ''}:</span>
                     <span>{formatCurrency(actualMarkup)} so'm</span>
                   </CalculationRow>
                   <CalculationRow>
@@ -1799,7 +1800,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
               </FormGroup>
             </FormGrid>
 
-            {originalPrice > 0 && (profitPercentage > 0 || markupAmount > 0) && installmentMonths > 0 && (
+            {originalPrice > 0 && (profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '' || markupAmount !== undefined && markupAmount !== null) && installmentMonths > 0 && (
               <CalculationContainer>
                 <h4>Hisob-kitob</h4>
                 <CalculationRow>
@@ -1807,7 +1808,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
                   <span>{formatCurrency(originalPrice)} so'm</span>
                 </CalculationRow>
                 <CalculationRow>
-                  <span>Ustama {markupType === 'percent' ? `(${profitPercentage}%)` : ''}:</span>
+                  <span>Ustama {markupType === 'percent' ? `(${profitPercentage || 0}%)` : ''}:</span>
                   <span>{formatCurrency(actualMarkup)} so'm</span>
                 </CalculationRow>
                 <CalculationRow>
