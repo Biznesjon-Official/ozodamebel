@@ -1,15 +1,23 @@
 // Determine API base URL based on environment
 const getApiBaseUrl = () => {
-  // In production, use the production backend URL
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.REACT_APP_API_URL || 'https://ozoda.biznesjon.uz/api';
+  // Check if we're in production by looking at the hostname
+  const isProduction = window.location.hostname !== 'localhost' && 
+                       window.location.hostname !== '127.0.0.1';
+  
+  if (isProduction) {
+    // In production, use the same origin with /api path
+    return `${window.location.origin}/api`;
   }
   
-  // In development, use direct localhost URL
+  // In development, use the configured URL or default
   return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+console.log('🌐 API Base URL:', API_BASE_URL);
+console.log('🌐 Environment:', process.env.NODE_ENV);
+console.log('🌐 Hostname:', window.location.hostname);
 
 // Get full image URL
 export const getImageUrl = (imagePath) => {
@@ -296,13 +304,29 @@ class ApiService {
     }
 
     try {
+      console.log('📤 Uploading to:', `${this.baseURL}/upload`);
+      console.log('📤 File:', file.name, 'Type:', type);
+      console.log('📤 Token:', token ? 'Present' : 'Missing');
+      
       const response = await fetch(`${this.baseURL}/upload`, {
         method: 'POST',
         headers,
         body: formData
       });
 
+      console.log('📤 Response status:', response.status);
+      console.log('📤 Response headers:', response.headers);
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Non-JSON response:', text.substring(0, 200));
+        throw new Error(`Server xatolik qaytardi. Status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('📤 Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'File upload failed');
@@ -310,7 +334,7 @@ class ApiService {
 
       return data;
     } catch (error) {
-      console.error('Upload Error:', error);
+      console.error('❌ Upload Error:', error);
       throw error;
     }
   }
