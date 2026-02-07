@@ -15,6 +15,9 @@ const storage = multer.diskStorage({
     let folder = 'documents';
     
     switch (type) {
+      case 'profile':
+        folder = 'profiles';
+        break;
       case 'passport_main':
       case 'passport_registration':
         folder = 'passports';
