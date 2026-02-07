@@ -624,41 +624,107 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
     
     const validImages = fileArray.filter(file => {
       const isValid = file.type.startsWith('image/');
-      console.log(`📤 File ${file.name}: type=${file.type}, valid=${isValid}`);
+      console.log(`📤 File ${file.name}: type=${file.type}, size=${file.size}, valid=${isValid}`);
       return isValid;
     });
     console.log('📤 Valid images count:', validImages.length);
     
     if (validImages.length > 0) {
       console.log('📤 Adding', validImages.length, 'new images');
-      setUploadedImages(prev => {
-        const updated = [...prev, ...validImages];
-        console.log('📤 Updated uploadedImages:', updated.length);
-        return updated;
-      });
       
-      // Create previews for new images
-      validImages.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          console.log('✅ File read successfully:', file.name);
-          setImagePreviews(prev => {
-            const updated = [...prev, e.target.result];
-            console.log('📤 Updated imagePreviews:', updated.length);
+      // Compress and add images
+      validImages.forEach(async (file) => {
+        try {
+          console.log('📤 Processing file:', file.name, 'Original size:', file.size);
+          
+          // Compress image
+          const compressedFile = await compressImage(file);
+          console.log('📤 Compressed file size:', compressedFile.size);
+          
+          setUploadedImages(prev => {
+            const updated = [...prev, compressedFile];
+            console.log('📤 Updated uploadedImages:', updated.length);
             return updated;
           });
-        };
-        reader.onerror = (e) => {
-          console.error('❌ Error reading file:', file.name, e);
-          alert(`Rasmni o'qishda xatolik: ${file.name}`);
-        };
-        reader.readAsDataURL(file);
+          
+          // Create preview
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            console.log('✅ File read successfully:', file.name);
+            setImagePreviews(prev => {
+              const updated = [...prev, e.target.result];
+              console.log('📤 Updated imagePreviews:', updated.length);
+              return updated;
+            });
+          };
+          reader.onerror = (e) => {
+            console.error('❌ Error reading file:', file.name, e);
+            alert(`Rasmni o'qishda xatolik: ${file.name}`);
+          };
+          reader.readAsDataURL(compressedFile);
+        } catch (error) {
+          console.error('❌ Error processing file:', error);
+          alert(`Rasmni qayta ishlashda xatolik: ${file.name}`);
+        }
       });
       console.log('✅ Images successfully added!');
     } else {
       console.log('❌ No valid images found');
       alert('Hech qanday to\'g\'ri rasm topilmadi. Iltimos, rasm faylini tanlang.');
     }
+  };
+
+  // Compress image function
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Set max dimensions
+          const maxWidth = 1280;
+          const maxHeight = 720;
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name || `compressed-${Date.now()}.jpg`, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              console.log(`📸 Compression: ${file.size} → ${compressedFile.size} bytes (${Math.round((1 - compressedFile.size / file.size) * 100)}% smaller)`);
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Blob yaratishda xatolik'));
+            }
+          }, 'image/jpeg', 0.6); // 60% quality
+        };
+        img.onerror = () => reject(new Error('Rasmni yuklashda xatolik'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Faylni o\'qishda xatolik'));
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleDrop = (e) => {
@@ -742,9 +808,9 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Set canvas size (compress to max 1920x1080)
-      const maxWidth = 1920;
-      const maxHeight = 1080;
+      // Set canvas size (compress to max 1280x720 for smaller file)
+      const maxWidth = 1280;
+      const maxHeight = 720;
       let width = video.videoWidth;
       let height = video.videoHeight;
       
@@ -764,16 +830,16 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, width, height);
       
-      // Compress to JPEG with 0.7 quality (smaller file size)
+      // Compress to JPEG with 0.6 quality (smaller file size)
       canvas.toBlob((blob) => {
         if (blob) {
-          console.log('📸 Original blob size:', blob.size, 'bytes');
+          console.log('📸 Camera photo size:', blob.size, 'bytes');
           const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
-          console.log('📸 Compressed file size:', file.size, 'bytes');
+          console.log('📸 File size:', file.size, 'bytes', `(${Math.round(file.size / 1024)}KB)`);
           handleImageUpload([file]);
           stopCamera();
         }
-      }, 'image/jpeg', 0.7); // 70% quality for smaller file size
+      }, 'image/jpeg', 0.6); // 60% quality for smaller file size
     }
   };
 
