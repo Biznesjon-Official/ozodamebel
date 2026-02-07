@@ -615,32 +615,86 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
   }, [customer, setValue, formatPhoneInput]);
 
   const handleImageUpload = (files) => {
+    console.log('📤 handleImageUpload called (Edit mode)');
+    console.log('📤 Files received:', files);
+    console.log('📤 Files length:', files?.length);
+    
     const fileArray = Array.from(files);
-    const validImages = fileArray.filter(file => file.type.startsWith('image/'));
+    console.log('📤 File array length:', fileArray.length);
+    
+    const validImages = fileArray.filter(file => {
+      const isValid = file.type.startsWith('image/');
+      console.log(`📤 File ${file.name}: type=${file.type}, valid=${isValid}`);
+      return isValid;
+    });
+    console.log('📤 Valid images count:', validImages.length);
     
     if (validImages.length > 0) {
-      setUploadedImages(prev => [...prev, ...validImages]);
+      console.log('📤 Adding', validImages.length, 'new images');
+      setUploadedImages(prev => {
+        const updated = [...prev, ...validImages];
+        console.log('📤 Updated uploadedImages:', updated.length);
+        return updated;
+      });
       
       // Create previews for new images
       validImages.forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
-          setImagePreviews(prev => [...prev, e.target.result]);
+          console.log('✅ File read successfully:', file.name);
+          setImagePreviews(prev => {
+            const updated = [...prev, e.target.result];
+            console.log('📤 Updated imagePreviews:', updated.length);
+            return updated;
+          });
+        };
+        reader.onerror = (e) => {
+          console.error('❌ Error reading file:', file.name, e);
+          alert(`Rasmni o'qishda xatolik: ${file.name}`);
         };
         reader.readAsDataURL(file);
       });
+      console.log('✅ Images successfully added!');
+    } else {
+      console.log('❌ No valid images found');
+      alert('Hech qanday to\'g\'ri rasm topilmadi. Iltimos, rasm faylini tanlang.');
     }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    console.log('📸 Files dropped');
     const files = e.dataTransfer.files;
-    handleImageUpload(files);
+    if (files && files.length > 0) {
+      handleImageUpload(files);
+    }
   };
 
   const handleFileSelect = (e) => {
+    console.log('📸 File input changed (Edit mode)');
+    console.log('📸 Event target:', e.target.id);
+    console.log('📸 Files:', e.target.files);
+    console.log('📸 Files length:', e.target.files?.length);
+    
     const files = e.target.files;
-    handleImageUpload(files);
+    if (files && files.length > 0) {
+      console.log('📸 Processing', files.length, 'files');
+      // Log each file details
+      Array.from(files).forEach((file, index) => {
+        console.log(`📸 File ${index + 1}:`, {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          lastModified: file.lastModified
+        });
+      });
+      handleImageUpload(files);
+    } else {
+      console.log('❌ No files selected');
+      alert('Rasm tanlanmadi. Iltimos, qaytadan urinib ko\'ring.');
+    }
+    // Reset input value to allow selecting same file again
+    e.target.value = '';
   };
 
   const removeImage = (index) => {
@@ -768,8 +822,19 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
         console.log('📤 Starting image upload for', uploadedImages.length, 'new images');
         for (const image of uploadedImages) {
           console.log('📤 Uploading image:', image.name, 'Type:', image.type, 'Size:', image.size);
+          
+          // Ensure image is a proper File object
+          let fileToUpload = image;
+          if (!(image instanceof File)) {
+            console.log('📤 Converting to File object');
+            fileToUpload = new File([image], image.name || `camera-${Date.now()}.jpg`, { 
+              type: image.type || 'image/jpeg' 
+            });
+          }
+          
           try {
-            const imageResponse = await apiService.uploadFile(image, 'profile');
+            console.log('📤 Uploading file:', fileToUpload.name, 'Type:', fileToUpload.type, 'Size:', fileToUpload.size);
+            const imageResponse = await apiService.uploadFile(fileToUpload, 'profile');
             console.log('📤 Upload response:', imageResponse);
             if (imageResponse.success) {
               // Use file.url or url from response
@@ -780,12 +845,15 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
                 console.log('✅ Image added to URLs array:', imageUrl);
               } else {
                 console.error('❌ No URL found in response:', imageResponse);
+                alert('Rasm URL topilmadi. Iltimos, qaytadan urinib ko\'ring.');
               }
             } else {
               console.error('❌ Upload failed:', imageResponse);
+              alert(`Rasm yuklashda xatolik: ${imageResponse.message || 'Noma\'lum xatolik'}`);
             }
           } catch (error) {
-            console.error('📤 Upload error for image:', image.name, error);
+            console.error('📤 Upload error for image:', fileToUpload.name, error);
+            alert(`Rasm yuklashda xatolik: ${error.message}`);
           }
         }
         console.log('📤 New image URLs:', newImageUrls);
@@ -878,8 +946,12 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
                 type="button"
                 className="primary"
                 onClick={() => {
-                  // Mobilda to'g'ridan-to'g'ri kamera ochiladi
-                  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                  // Mobil qurilmalarni aniqlash
+                  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                  
+                  if (isMobile || hasTouch) {
+                    // Mobilda to'g'ridan-to'g'ri kamera ochiladi
                     document.getElementById('cameraInput').click();
                   } else {
                     // Desktop/noutbukda video stream
@@ -928,11 +1000,13 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               style={{ display: 'none' }}
             />
             
+            {/* Mobil qurilmalar uchun kamera input */}
             <input
               id="cameraInput"
               type="file"
               accept="image/*"
               capture="environment"
+              multiple
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />

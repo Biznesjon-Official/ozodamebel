@@ -59,13 +59,39 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-  fileFilter: fileFilter
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
 });
 
 // @desc    Fayl yuklash
 // @route   POST /api/upload
 // @access  Private
-router.post('/', protect, upload.single('file'), async (req, res) => {
+router.post('/', protect, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('📤 Multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'Fayl hajmi juda katta (maksimal 10MB)'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Fayl yuklashda xatolik: ${err.message}`
+      });
+    } else if (err) {
+      console.error('📤 Upload error:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'Fayl yuklashda xatolik'
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     console.log('📤 Upload request received');
     console.log('📤 File info:', req.file);
