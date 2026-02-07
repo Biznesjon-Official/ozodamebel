@@ -36,7 +36,7 @@ Bu template asosida mijoz ma'lumotlari bilan shartnoma yaratish uchun quyidagi o
 
 ## Sotuvchi ma'lumotlari:
 ```
-{{sotuvchinig_ismi}} - Sotuvchi kompaniya nomi (default: "Obod ozoda fayz mebel")
+{{sotuvchinig_ismi}} - Sotuvchi kompaniya nomi (default: **"Obod ozoda fayz mebel"**)
 ```
 
 ## To'lov jadvali uchun:

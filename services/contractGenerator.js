@@ -46,8 +46,8 @@ class ContractGenerator {
       shartnoma_berilgan_sana: formatDate(currentDate),
       
       // Sotuvchi ma'lumotlari
-      sotuvchinig_ismi: 'Obod ozoda fayz mebel',
-      'Обод озода файз мебель» ХК': 'Обод озода файз мебель» ХК',
+      sotuvchinig_ismi: '**"Obod ozoda fayz mebel"**',
+      'Обод озода файз мебель» ХК': '**"Обод озода файз мебель"** ХК',
       
       // Mijoz ma'lumotlari
       mijozning_nomi: customer.fullName,
@@ -88,7 +88,7 @@ class ContractGenerator {
       sana_vaqt: formatDate(currentDate),
       
       // Sotuvchi ma'lumotlari
-      sotuvchinig_ismi: 'Obod ozoda fayz mebel',
+      sotuvchinig_ismi: '**"Obod ozoda fayz mebel"**',
       
       // Mijoz ma'lumotlari
       mijozning_nomi: customer.fullName,
