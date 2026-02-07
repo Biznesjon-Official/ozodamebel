@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { 
   X, 
@@ -273,6 +273,16 @@ const ImageUploadArea = styled.div`
   }
 `;
 
+const CameraContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+`;
+
 // Form Components
 const FormGrid = styled.div`
   display: grid;
@@ -387,6 +397,10 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
   const [imagePreviews, setImagePreviews] = useState(customer?.profileImages || []);
   const [customerPhoneValue, setCustomerPhoneValue] = useState('');
   const [guarantorPhoneValue, setGuarantorPhoneValue] = useState('');
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
   
   // Passport states
   const [customerPassportValue, setCustomerPassportValue] = useState('');
@@ -644,6 +658,57 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
     }
   };
 
+  // Kamera funksiyalari
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setShowCamera(true);
+      }
+    } catch (error) {
+      console.error('Kamera ochishda xatolik:', error);
+      alert('Kamera ochishda xatolik. Iltimos, brauzerga kamera ruxsatini bering.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+          handleImageUpload([file]);
+          stopCamera();
+        }
+      }, 'image/jpeg', 0.9);
+    }
+  };
+
+  // Cleanup kamera on unmount
+  React.useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   const nextStep = () => {
     if (currentStep < 4 && validateCurrentStep()) {
       setCurrentStep(currentStep + 1);
@@ -700,21 +765,36 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
       // Upload new images first if exist
       let newImageUrls = [];
       if (uploadedImages.length > 0) {
+        console.log('📤 Starting image upload for', uploadedImages.length, 'new images');
         for (const image of uploadedImages) {
-          const imageResponse = await apiService.uploadFile(image, 'profile');
-          if (imageResponse.success) {
-            // Use file.url or url from response
-            const imageUrl = imageResponse.file?.url || imageResponse.url || imageResponse.filePath;
-            if (imageUrl) {
-              newImageUrls.push(imageUrl);
+          console.log('📤 Uploading image:', image.name, 'Type:', image.type, 'Size:', image.size);
+          try {
+            const imageResponse = await apiService.uploadFile(image, 'profile');
+            console.log('📤 Upload response:', imageResponse);
+            if (imageResponse.success) {
+              // Use file.url or url from response
+              const imageUrl = imageResponse.file?.url || imageResponse.url || imageResponse.filePath;
+              console.log('📤 Image URL:', imageUrl);
+              if (imageUrl) {
+                newImageUrls.push(imageUrl);
+                console.log('✅ Image added to URLs array:', imageUrl);
+              } else {
+                console.error('❌ No URL found in response:', imageResponse);
+              }
+            } else {
+              console.error('❌ Upload failed:', imageResponse);
             }
+          } catch (error) {
+            console.error('📤 Upload error for image:', image.name, error);
           }
         }
+        console.log('📤 New image URLs:', newImageUrls);
       }
 
       // Combine existing images with new ones
       const existingImages = imagePreviews.filter(img => typeof img === 'string' && !img.startsWith('blob:'));
       const allImageUrls = [...existingImages, ...newImageUrls];
+      console.log('📤 All image URLs (existing + new):', allImageUrls);
 
       // Prepare customer data
       const customerData = {
@@ -797,13 +877,28 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               <Button
                 type="button"
                 className="primary"
-                onClick={() => document.getElementById('cameraInput').click()}
+                onClick={startCamera}
                 style={{ flex: 1, maxWidth: '200px' }}
               >
                 <Camera size={20} />
                 Kameradan olish
               </Button>
             </div>
+            
+            {showCamera && (
+              <CameraContainer>
+                <video ref={videoRef} autoPlay playsInline style={{ width: '100%', maxWidth: '500px', borderRadius: '8px' }} />
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px', justifyContent: 'center' }}>
+                  <Button type="button" className="primary" onClick={capturePhoto}>
+                    Rasm olish
+                  </Button>
+                  <Button type="button" className="secondary" onClick={stopCamera}>
+                    Bekor qilish
+                  </Button>
+                </div>
+              </CameraContainer>
+            )}
             
             <ImageUploadArea
               onDrop={handleDrop}
@@ -821,15 +916,6 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               type="file"
               accept="image/*"
               multiple
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
-            
-            <input
-              id="cameraInput"
-              type="file"
-              accept="image/*"
-              capture="environment"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />

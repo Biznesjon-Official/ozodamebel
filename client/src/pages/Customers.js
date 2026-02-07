@@ -604,6 +604,14 @@ const ActionButton = styled.button`
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
+  min-width: 44px;
+  min-height: 44px;
+  
+  @media (max-width: 768px) {
+    padding: 14px;
+    min-width: 48px;
+    min-height: 48px;
+  }
   
   &.view {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
@@ -614,6 +622,10 @@ const ActionButton = styled.button`
       background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    &:active {
+      transform: scale(0.95);
     }
   }
   
@@ -627,6 +639,10 @@ const ActionButton = styled.button`
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
     }
+    
+    &:active {
+      transform: scale(0.95);
+    }
   }
   
   &.delete {
@@ -638,6 +654,10 @@ const ActionButton = styled.button`
       background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    &:active {
+      transform: scale(0.95);
     }
   }
   
@@ -651,6 +671,10 @@ const ActionButton = styled.button`
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
+    
+    &:active {
+      transform: scale(0.95);
+    }
   }
   
   &.contract {
@@ -662,6 +686,10 @@ const ActionButton = styled.button`
       background: linear-gradient(135deg, rgba(139, 69, 19, 0.2), rgba(120, 53, 15, 0.2));
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+    }
+    
+    &:active {
+      transform: scale(0.95);
     }
     
     &:disabled {
