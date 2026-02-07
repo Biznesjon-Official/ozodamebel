@@ -923,8 +923,8 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
           const productName = watch('productName');
           const profitPercentage = watch('profitPercentage');
           const hasValidMarkup = markupType === 'percent' 
-            ? (profitPercentage && profitPercentage > 0)
-            : (markupAmount && markupAmount > 0);
+            ? (profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '')
+            : (markupAmount !== undefined && markupAmount !== null);
           
           return productName && productName.trim() !== '' && 
                  originalPrice > 0 && 
@@ -937,8 +937,8 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
         const productName = watch('productName');
         const profitPercentage = watch('profitPercentage');
         const hasValidMarkup = markupType === 'percent' 
-          ? (profitPercentage && profitPercentage > 0)
-          : (markupAmount && markupAmount > 0);
+          ? (profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '')
+          : (markupAmount !== undefined && markupAmount !== null);
         
         return productName && productName.trim() !== '' && 
                originalPrice > 0 && 

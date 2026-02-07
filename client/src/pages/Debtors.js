@@ -9,7 +9,10 @@ import {
   Phone,
   Users,
   MapPin,
-  Eye
+  Eye,
+  Download,
+  PhoneCall,
+  X
 } from 'lucide-react';
 import apiService from '../services/api';
 import { formatPhoneNumber, formatCurrency, formatDate } from '../utils/formatters';
@@ -49,6 +52,36 @@ const PageTitle = styled.div`
   
   .icon {
     color: #dc2626;
+  }
+`;
+
+const ExportButton = styled.button`
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  
+  &:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
   }
 `;
 
@@ -96,12 +129,16 @@ const DebtorsGrid = styled.div`
   }
 `;
 
-const DebtorCard = styled.div`
+const DebtorCard = styled.div.attrs(props => ({
+  style: {
+    borderLeftColor: props.$overdueDays >= 3 ? '#dc2626' : '#f59e0b'
+  }
+}))`
   background: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid ${props => props.$overdueDays >= 3 ? '#dc2626' : '#f59e0b'};
+  border-left: 4px solid;
   transition: all 0.2s ease;
   
   &:hover {
@@ -117,7 +154,11 @@ const DebtorHeader = styled.div`
   margin-bottom: 16px;
 `;
 
-const DebtorInfo = styled.div`
+const DebtorInfo = styled.div.attrs(props => ({
+  style: {
+    '--badge-bg': props.$overdueDays >= 3 ? '#dc2626' : '#f59e0b'
+  }
+}))`
   flex: 1;
   
   h3 {
@@ -128,7 +169,7 @@ const DebtorInfo = styled.div`
   }
   
   .overdue-badge {
-    background: ${props => props.$overdueDays >= 3 ? '#dc2626' : '#f59e0b'};
+    background: var(--badge-bg);
     color: white;
     padding: 4px 12px;
     border-radius: 20px;
@@ -261,13 +302,147 @@ const LoadingSpinner = styled.div`
   color: #6c757d;
 `;
 
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  
+  h3 {
+    margin: 0;
+    color: #374151;
+    font-size: 20px;
+  }
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  
+  &:hover {
+    color: #374151;
+  }
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+`;
+
+const Button = styled.button`
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  
+  &.primary {
+    background: #3b82f6;
+    color: white;
+    
+    &:hover {
+      background: #2563eb;
+    }
+  }
+  
+  &.secondary {
+    background: #e9ecef;
+    color: #374151;
+    
+    &:hover {
+      background: #dee2e6;
+    }
+  }
+`;
+
+const CallNoteDisplay = styled.div`
+  background: #f0f9ff;
+  border-left: 3px solid #3b82f6;
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 4px;
+  
+  .note-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  
+  .note-text {
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .note-date {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+`;
+
 const Debtors = () => {
   const navigate = useNavigate();
   const { showError, showSuccess } = useNotification();
-  const [activeTab, setActiveTab] = useState('1day');
+  const [activeTab, setActiveTab] = useState('all');
   const [overdue1Day, setOverdue1Day] = useState([]);
   const [overdue3Days, setOverdue3Days] = useState([]);
+  const [allOverdue, setAllOverdue] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [callNote, setCallNote] = useState('');
 
   const loadDebtors = useCallback(async () => {
     try {
@@ -289,6 +464,16 @@ const Debtors = () => {
       } else {
         setOverdue3Days([]);
       }
+      
+      // Combine all overdue customers
+      const all1Day = response1Day?.customers || [];
+      const all3Days = response3Days?.customers || [];
+      const allCustomers = [...all1Day, ...all3Days];
+      // Remove duplicates by ID
+      const uniqueCustomers = allCustomers.filter((customer, index, self) =>
+        index === self.findIndex((c) => c._id === customer._id)
+      );
+      setAllOverdue(uniqueCustomers);
     } catch (error) {
       console.error('Error loading debtors:', error);
       setOverdue1Day([]);
@@ -357,11 +542,124 @@ const Debtors = () => {
     }
   };
 
+  const exportToExcel = () => {
+    try {
+      // Create worksheet data
+      const headers = [
+        'T/r',
+        'F.I.O',
+        'Telefon',
+        'Viloyat',
+        'Tuman',
+        'Manzil',
+        'Mahsulot',
+        'Qarz summasi',
+        'Oylik to\'lov',
+        'Keyingi to\'lov sanasi',
+        'Kechikkan kunlar',
+        'Kafil F.I.O',
+        'Kafil telefon'
+      ];
+      
+      const rows = allOverdue.map((customer, index) => {
+        const overdueDays = getOverdueDays(customer);
+        return [
+          index + 1,
+          customer.fullName || '',
+          formatPhoneNumber(customer.phone) || '',
+          customer.region || '',
+          customer.district || '',
+          customer.address || '',
+          customer.product?.name || '',
+          (customer.creditInfo?.remainingAmount || 0).toString(),
+          (customer.product?.monthlyPayment || 0).toString(),
+          formatDate(customer.creditInfo?.nextPaymentDate) || '',
+          overdueDays.toString(),
+          customer.guarantor?.name || '',
+          formatPhoneNumber(customer.guarantor?.phone) || ''
+        ];
+      });
+      
+      // Create HTML table for Excel
+      let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+      html += '<head><meta charset="utf-8"><style>table {border-collapse: collapse;} th, td {border: 1px solid black; padding: 8px; text-align: left;}</style></head>';
+      html += '<body><table>';
+      
+      // Add headers
+      html += '<tr>';
+      headers.forEach(header => {
+        html += `<th>${header}</th>`;
+      });
+      html += '</tr>';
+      
+      // Add rows
+      rows.forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => {
+          html += `<td>${cell}</td>`;
+        });
+        html += '</tr>';
+      });
+      
+      html += '</table></body></html>';
+      
+      // Create blob and download
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Qarzdorlar_${new Date().toISOString().split('T')[0]}.xls`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showSuccess(`${allOverdue.length} ta qarzdor Excel faylga yuklandi`);
+    } catch (error) {
+      console.error('Excel export error:', error);
+      showError('Excel faylni yuklab olishda xatolik');
+    }
+  };
+
   const handleViewCustomer = (customer) => {
     navigate(`/customers/${customer._id}`);
   };
 
+  const handleAddCallNote = (customer) => {
+    setSelectedCustomer(customer);
+    setCallNote(customer.callNote || '');
+    setShowNoteModal(true);
+  };
+
+  const handleSaveCallNote = async () => {
+    try {
+      console.log('💾 Saving call note...');
+      console.log('Customer ID:', selectedCustomer._id);
+      console.log('Call note:', callNote);
+      
+      // Update customer with call note
+      const response = await apiService.updateCustomer(selectedCustomer._id, {
+        callNote: callNote,
+        lastCallDate: new Date()
+      });
+
+      console.log('✅ Response:', response);
+
+      if (response.success) {
+        showSuccess('Izoh saqlandi');
+        setShowNoteModal(false);
+        setSelectedCustomer(null);
+        setCallNote('');
+        loadDebtors(); // Reload to show updated note
+      }
+    } catch (error) {
+      console.error('❌ Error saving call note:', error);
+      showError('Izohni saqlashda xatolik');
+    }
+  };
+
   const getCurrentDebtors = () => {
+    if (activeTab === 'all') return allOverdue;
     return activeTab === '1day' ? overdue1Day : overdue3Days;
   };
 
@@ -388,9 +686,23 @@ const Debtors = () => {
           <AlertTriangle className="icon" size={32} />
           <h1>Qarzdorlar</h1>
         </PageTitle>
+        {activeTab === 'all' && allOverdue.length > 0 && (
+          <ExportButton onClick={exportToExcel}>
+            <Download size={20} />
+            Excel yuklab olish ({allOverdue.length})
+          </ExportButton>
+        )}
       </PageHeader>
 
       <TabsContainer>
+        <Tab 
+          $active={activeTab === 'all'} 
+          onClick={() => setActiveTab('all')}
+        >
+          <Users size={16} />
+          Barchasi
+          <span className="count">{allOverdue.length}</span>
+        </Tab>
         <Tab 
           $active={activeTab === '1day'} 
           onClick={() => setActiveTab('1day')}
@@ -447,6 +759,22 @@ const Debtors = () => {
                     >
                       <Eye size={16} />
                     </ActionButton>
+                    <ActionButton 
+                      className="call" 
+                      onClick={() => handleAddCallNote(customer)}
+                      title="Telefon qilindi"
+                      style={{ borderColor: '#8b5cf6', color: '#8b5cf6' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#8b5cf6';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'none';
+                        e.currentTarget.style.color = '#8b5cf6';
+                      }}
+                    >
+                      <PhoneCall size={16} />
+                    </ActionButton>
                   </ActionButtons>
                 </DebtorHeader>
 
@@ -490,10 +818,57 @@ const Debtors = () => {
                     <span className="value">{formatCurrency(customer.creditInfo?.remainingAmount)} so'm</span>
                   </div>
                 </PaymentInfo>
+
+                {customer.callNote && (
+                  <CallNoteDisplay>
+                    <div className="note-header">
+                      <PhoneCall size={14} />
+                      Qo'ng'iroq izohi
+                    </div>
+                    <div className="note-text">{customer.callNote}</div>
+                    {customer.lastCallDate && (
+                      <div className="note-date">
+                        {formatDate(customer.lastCallDate)}
+                      </div>
+                    )}
+                  </CallNoteDisplay>
+                )}
               </DebtorCard>
             );
           })}
         </DebtorsGrid>
+      )}
+
+      {showNoteModal && (
+        <Modal onClick={() => setShowNoteModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h3>Qo'ng'iroq izohi</h3>
+              <CloseButton onClick={() => setShowNoteModal(false)}>
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
+            <TextArea
+              value={callNote}
+              onChange={(e) => setCallNote(e.target.value)}
+              placeholder="Qo'ng'iroq haqida izoh yozing..."
+            />
+            <ModalActions>
+              <Button 
+                className="secondary" 
+                onClick={() => setShowNoteModal(false)}
+              >
+                Bekor qilish
+              </Button>
+              <Button 
+                className="primary" 
+                onClick={handleSaveCallNote}
+              >
+                Saqlash
+              </Button>
+            </ModalActions>
+          </ModalContent>
+        </Modal>
       )}
     </PageContainer>
   );

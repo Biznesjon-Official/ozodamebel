@@ -180,6 +180,16 @@ const customerSchema = new mongoose.Schema({
     default: 'active'
   },
   
+  // Qo'ng'iroq izohi
+  callNote: {
+    type: String,
+    required: false
+  },
+  lastCallDate: {
+    type: Date,
+    required: false
+  },
+  
   // Yaratuvchi
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

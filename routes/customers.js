@@ -343,6 +343,9 @@ router.get('/:id', protect, async (req, res) => {
 // @access  Private
 router.put('/:id', protect, auditLog('update', 'customer'), async (req, res) => {
   try {
+    console.log('📝 Updating customer:', req.params.id);
+    console.log('📝 Request body:', req.body);
+    
     const customer = await Customer.findById(req.params.id);
 
     if (!customer) {
@@ -382,7 +385,11 @@ router.put('/:id', protect, auditLog('update', 'customer'), async (req, res) => 
       sellingPrice,
       installmentMonths,
       monthlyPayment,
-      initialPayment
+      initialPayment,
+      
+      // Call note info
+      callNote,
+      lastCallDate
     } = req.body;
 
     // Telefon raqamlarni normalize qilish
@@ -424,6 +431,15 @@ router.put('/:id', protect, auditLog('update', 'customer'), async (req, res) => 
       }
     };
 
+    // Update call note if provided
+    if (callNote !== undefined) {
+      updateData.callNote = callNote;
+    }
+    
+    if (lastCallDate !== undefined) {
+      updateData.lastCallDate = lastCallDate;
+    }
+
     // Update initial payment if provided
     if (initialPayment !== undefined) {
       updateData['creditInfo.initialPayment'] = parseFloat(initialPayment) || 0;
@@ -435,6 +451,10 @@ router.put('/:id', protect, auditLog('update', 'customer'), async (req, res) => 
       updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'fullName');
+
+    console.log('✅ Customer updated successfully');
+    console.log('✅ Call note:', updatedCustomer.callNote);
+    console.log('✅ Last call date:', updatedCustomer.lastCallDate);
 
     res.json({
       success: true,

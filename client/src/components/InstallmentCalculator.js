@@ -428,7 +428,7 @@ const InstallmentCalculator = ({ onClose }) => {
   };
 
   const paymentSchedule = generatePaymentSchedule();
-  const hasResults = originalPrice > 0 && markupAmount > 0 && months > 0;
+  const hasResults = originalPrice > 0 && markupAmount >= 0 && months > 0;
   const totalAmount = monthlyPayment * months;
 
   return (

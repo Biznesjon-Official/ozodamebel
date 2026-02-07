@@ -462,10 +462,10 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
   let sellingPrice = originalPrice;
   let actualMarkup = 0;
   
-  if (markupType === 'percent' && profitPercentage > 0) {
+  if (markupType === 'percent' && profitPercentage >= 0) {
     actualMarkup = originalPrice * profitPercentage / 100;
     sellingPrice = originalPrice + actualMarkup;
-  } else if (markupType === 'amount' && markupAmount > 0) {
+  } else if (markupType === 'amount' && markupAmount >= 0) {
     actualMarkup = markupAmount;
     sellingPrice = originalPrice + actualMarkup;
   }
@@ -888,7 +888,7 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
         
         return productName && productName.trim() !== '' &&
                originalPriceValue && parseCurrency(originalPriceValue) > 0 &&
-               profitPercentage && profitPercentage > 0 &&
+               profitPercentage !== undefined && profitPercentage !== null && profitPercentage !== '' &&
                installmentMonths && installmentMonths > 0;
         
       default:
@@ -1375,7 +1375,7 @@ const EditCustomerModal = ({ customer, onClose, onSuccess }) => {
               </FormGroup>
             </FormGrid>
 
-            {originalPrice > 0 && profitPercentage > 0 && installmentMonths > 0 && (
+            {originalPrice > 0 && profitPercentage >= 0 && installmentMonths > 0 && (
               <CalculationContainer>
                 <h4>Hisob-kitob</h4>
                 <CalculationRow>

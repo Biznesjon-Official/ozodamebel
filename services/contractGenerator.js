@@ -95,6 +95,9 @@ class ContractGenerator {
       mijoz_smi: customer.fullName,
       mijoz_telefoni: formatPhoneNumber(customer.phone),
       mijoz_manzili: customer.address || 'Manzil ko\'rsatilmagan',
+      mijoz_region: customer.region || 'Viloyat ko\'rsatilmagan',
+      mijoz_district: customer.district || 'Tuman ko\'rsatilmagan',
+      mijoz_uy_raqami: customer.houseNumber || '',
       mijoz_passport_seriyasi: customer.passportSeries || 'Passport ma\'lumoti yo\'q',
       
       // Mahsulot ma'lumotlari
