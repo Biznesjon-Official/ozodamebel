@@ -1858,7 +1858,7 @@ const AddCustomerModal = ({ onClose, onSuccess }) => {
             Orqaga
           </Button>
 
-          {currentStep < 4 ? (
+          {currentStep < (hasGuarantor ? 4 : 3) ? (
             <Button
               type="button"
               className="primary"
