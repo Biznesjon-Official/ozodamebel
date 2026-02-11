@@ -128,7 +128,7 @@ SMS_API_URL=https://notify.eskiz.uz/api
 SMS_API_TOKEN=your_sms_token_here
 
 # Telegram Bot
-TELEGRAM_BOT_TOKEN=8250571639:AAFEKgWrZYmbd5irQSDc-PpfhMtpGMoy-ns
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 TELEGRAM_CHAT_ID=your_chat_id
 
 # File Upload
@@ -139,10 +139,10 @@ UPLOAD_PATH=./uploads
 ### Telegram Bot O'rnatish
 ```bash
 # Bot ma'lumotlarini tekshirish
-curl -X GET "https://api.telegram.org/bot8250571639:AAFEKgWrZYmbd5irQSDc-PpfhMtpGMoy-ns/getMe"
+curl -X GET "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getMe"
 
 # Webhook o'rnatish
-curl -X POST "https://api.telegram.org/bot8250571639:AAFEKgWrZYmbd5irQSDc-PpfhMtpGMoy-ns/setWebhook" \
+curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://yourdomain.com/api/telegram/webhook"}'
 ```

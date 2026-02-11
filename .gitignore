@@ -6,12 +6,12 @@ client/node_modules/
 # Environment files
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Production files
 .env.production
+client/.env.development
 
 # Logs
 logs/

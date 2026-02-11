@@ -10,8 +10,9 @@ Bu bot har 5 minutda mijozlarning to'lov sanalarini tekshiradi va eslatmalar yub
 
 ### 1. Bot Token
 ```
-8250571639:AAFEKgWrZYmbd5irQSDc-PpfhMtpGMoy-ns
+YOUR_TELEGRAM_BOT_TOKEN_HERE
 ```
+**Eslatma:** Haqiqiy tokenni `.env` faylida saqlang va hech qachon GitHub'ga yuklmang!
 
 ### 2. Chat ID
 ```
