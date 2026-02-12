@@ -107,12 +107,12 @@ const authLimiter = rateLimit({
 
 app.use('/api/auth/login', authLimiter);
 
-// Environment variables'ni log qilish
+// Environment variables'ni log qilish (SECURITY: Don't log sensitive data)
 console.log('🔧 Environment Variables:');
 console.log('   NODE_ENV:', process.env.NODE_ENV);
 console.log('   PORT:', process.env.PORT);
-console.log('   MONGODB_URI:', process.env.MONGODB_URI);
-console.log('   JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+console.log('   MONGODB_URI:', process.env.MONGODB_URI ? 'SET ✅' : 'NOT SET ❌');
+console.log('   JWT_SECRET:', process.env.JWT_SECRET ? 'SET ✅' : 'NOT SET ❌');
 
 // CORS configuration
 const allowedOrigins = process.env.NODE_ENV === 'production' 
@@ -137,16 +137,27 @@ app.use(express.urlencoded({
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// MongoDB ulanishi
+// MongoDB ulanishi - optimized settings
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/furniture_installment', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 30000, // 30 seconds to select server
+  socketTimeoutMS: 45000, // 45 seconds for socket operations
+  connectTimeoutMS: 30000, // 30 seconds to establish connection
+  maxPoolSize: 10, // Maximum connection pool size
+  minPoolSize: 2, // Minimum connection pool size
+  retryWrites: true,
+  retryReads: true,
 })
 .then(() => {
-  console.log('MongoDB ga muvaffaqiyatli ulandi');
+  console.log('✅ MongoDB ga muvaffaqiyatli ulandi');
+  console.log('📊 Database:', mongoose.connection.name);
+  console.log('🔗 Connection state:', mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting');
 })
 .catch((error) => {
-  console.error('MongoDB ulanish xatoligi:', error);
+  console.error('❌ MongoDB ulanish xatoligi:', error.message);
+  console.error('💡 Iltimos, MONGODB_URI ni tekshiring va internet ulanishini tasdiqlang');
+  process.exit(1); // Exit if database connection fails
 });
 
 const { globalErrorHandler } = require('./middleware/errorHandler');
@@ -324,8 +335,25 @@ process.on('SIGINT', () => {
 require('./services/notificationScheduler');
 
 // Telegram bot xizmati - to'lov eslatmalari
-const telegramBot = require('./services/telegramBot');
-telegramBot.startPaymentReminderService();
+// Wait for MongoDB connection before starting bot service
+mongoose.connection.once('open', () => {
+  console.log('🔌 MongoDB connection ready - starting Telegram bot service...');
+  const telegramBot = require('./services/telegramBot');
+  telegramBot.startPaymentReminderService();
+});
+
+// Handle MongoDB connection errors
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected successfully');
+});
 
 // Telegram polling (localhost uchun)
 if (process.env.NODE_ENV === 'development') {

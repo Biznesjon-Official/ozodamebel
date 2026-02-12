@@ -76,6 +76,13 @@ class TelegramBot {
   // Bugun to'lov kuni bo'lgan mijozlarni topish
   async getTodayPayments() {
     try {
+      // Check if MongoDB is connected
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        console.warn('⚠️ MongoDB ulanmagan, so\'rovni o\'tkazib yuborish');
+        return [];
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -87,11 +94,14 @@ class TelegramBot {
           $gte: today,
           $lt: tomorrow
         }
-      }).populate('product').populate('guarantor');
+      })
+      .populate('product')
+      .populate('guarantor')
+      .maxTimeMS(20000); // 20 second timeout for query
 
       return customers;
     } catch (error) {
-      console.error('Bugungi to\'lovlarni olishda xatolik:', error);
+      console.error('❌ Bugungi to\'lovlarni olishda xatolik:', error.message);
       return [];
     }
   }
@@ -113,6 +123,13 @@ class TelegramBot {
   // 2 kun qolgan to'lovlarni topish
   async getUpcomingPayments() {
     try {
+      // Check if MongoDB is connected
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        console.warn('⚠️ MongoDB ulanmagan, so\'rovni o\'tkazib yuborish');
+        return [];
+      }
+
       const twoDaysLater = new Date();
       twoDaysLater.setDate(twoDaysLater.getDate() + 2);
       twoDaysLater.setHours(0, 0, 0, 0);
@@ -125,11 +142,14 @@ class TelegramBot {
           $gte: twoDaysLater,
           $lt: threeDaysLater
         }
-      }).populate('product').populate('guarantor');
+      })
+      .populate('product')
+      .populate('guarantor')
+      .maxTimeMS(20000); // 20 second timeout for query
 
       return customers;
     } catch (error) {
-      console.error('Yaqinlashayotgan to\'lovlarni olishda xatolik:', error);
+      console.error('❌ Yaqinlashayotgan to\'lovlarni olishda xatolik:', error.message);
       return [];
     }
   }
@@ -137,6 +157,13 @@ class TelegramBot {
   // Kechikkan to'lovlarni topish (1 kun)
   async getOverduePayments1Day() {
     try {
+      // Check if MongoDB is connected
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        console.warn('⚠️ MongoDB ulanmagan, so\'rovni o\'tkazib yuborish');
+        return [];
+      }
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(23, 59, 59, 999);
@@ -145,7 +172,10 @@ class TelegramBot {
         'creditInfo.nextPaymentDate': {
           $lt: yesterday
         }
-      }).populate('product').populate('guarantor');
+      })
+      .populate('product')
+      .populate('guarantor')
+      .maxTimeMS(20000); // 20 second timeout for query
 
       // Faqat 1 kun kechikkanlarni filter qilish
       const oneDayOverdue = customers.filter(customer => {
@@ -157,7 +187,7 @@ class TelegramBot {
 
       return oneDayOverdue;
     } catch (error) {
-      console.error('1 kun kechikkan to\'lovlarni olishda xatolik:', error);
+      console.error('❌ 1 kun kechikkan to\'lovlarni olishda xatolik:', error.message);
       return [];
     }
   }
@@ -165,6 +195,13 @@ class TelegramBot {
   // Kechikkan to'lovlarni topish (3 kun)
   async getOverduePayments3Days() {
     try {
+      // Check if MongoDB is connected
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        console.warn('⚠️ MongoDB ulanmagan, so\'rovni o\'tkazib yuborish');
+        return [];
+      }
+
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
       threeDaysAgo.setHours(23, 59, 59, 999);
@@ -173,7 +210,10 @@ class TelegramBot {
         'creditInfo.nextPaymentDate': {
           $lt: threeDaysAgo
         }
-      }).populate('product').populate('guarantor');
+      })
+      .populate('product')
+      .populate('guarantor')
+      .maxTimeMS(20000); // 20 second timeout for query
 
       // Faqat 3+ kun kechikkanlarni filter qilish
       const threeDaysOverdue = customers.filter(customer => {
@@ -185,7 +225,7 @@ class TelegramBot {
 
       return threeDaysOverdue;
     } catch (error) {
-      console.error('3 kun kechikkan to\'lovlarni olishda xatolik:', error);
+      console.error('❌ 3 kun kechikkan to\'lovlarni olishda xatolik:', error.message);
       return [];
     }
   }
@@ -275,10 +315,11 @@ class TelegramBot {
     console.log('📋 Bot Token:', this.botToken ? 'SET ✅' : 'NOT SET ❌');
     console.log('💬 Chat ID:', CHAT_ID);
     
-    // Dastlab bir marta tekshirish
+    // Dastlab 30 soniya kutib, MongoDB ulanishini ta'minlash
     setTimeout(() => {
+      console.log('🔍 Birinchi to\'lov eslatmalari tekshiruvi...');
       this.sendPaymentReminders();
-    }, 5000); // 5 soniya kutib, keyin tekshirish
+    }, 30000); // 30 soniya kutish
     
     // Har 5 minutda (300000 ms) tekshirish
     setInterval(() => {
